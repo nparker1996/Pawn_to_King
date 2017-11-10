@@ -4,16 +4,6 @@ using UnityEngine;
 
 public class Piece : MonoBehaviour {
 
-	// Use this for initialization
-	void Start () {
-		
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
-
     private int x; //x location of a piece
     private int y; //y location of a piece
     [SerializeField] private bool team; // team of the piece // true = white, false = black
@@ -23,6 +13,18 @@ public class Piece : MonoBehaviour {
     private bool pawnDoubleMove; //for pawns only, if they just did their double openning move, of en passant move
     private int moveCount;
     List<int[]> moves;//list of possible Moves
+
+    // Use this for initialization
+    void Start()
+    {
+        
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+
+    }
 
     public Piece() //contructor
     {
@@ -73,6 +75,7 @@ public class Piece : MonoBehaviour {
     {
         x = X;
         y = Y;
+        this.gameObject.transform.position = new Vector3(X, 0, Y);
     }
 
     public bool getTeam() //returns the team the piece is on
