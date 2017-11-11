@@ -291,7 +291,7 @@ public class Game : MonoBehaviour
 
     }
 
-    public List<int[]> getPossibleMoves(Piece piece)  //get locations piece can move, 
+    public List<int[]> getPossibleMoves(Piece piece)  //get locations piece can move, //DONE
     {
         List<int[]> possibleMoves = new List<int[]>(); //of possible moves piece can make
         switch (piece.getType())
@@ -361,9 +361,27 @@ public class Game : MonoBehaviour
         return false;
     }
 
-    void movePieceToTile(Piece piece, int X, int Y) //moves a piece to a tile
+    void movePieceToTile(Piece piece, int X, int Y) //moves a piece to a tile //DONE
     {
-
+        if (!piece.getMoved()) //piece has not moved
+        {
+            piece.setMoved();
+        }
+        if (teamOnTile(X, Y, !piece.getTeam()))//moving to a tile with an enemy on it
+        {
+            if (board[X, Y].getTeam())//white Team
+            {
+                blackTeam.points += board[X, Y].getValue();
+            }
+            else//black team
+            {
+                whiteTeam.points += board[X, Y].getValue();
+            }
+            deletePiece(board[X, Y]); //piece is deleted
+        }
+        board[X, Y] = piece; //puts piece on new tile
+        piece.setLocation(X, Y);
+        piece.addMoveCount(1);
     }
 
     public bool tileWithinBoard(int x, int y) //tile within the board //DONE
@@ -380,18 +398,97 @@ public class Game : MonoBehaviour
         return new List<int[]>();
     }
 
-    public bool checkForChecks(bool teamBeingChecked, Piece pieceChecking)//checks for a check
+    public bool checkForChecks(bool teamBeingChecked, Piece pieceChecking)//checks for a check //DONE
     {
+        Piece king;
+        if (teamBeingChecked)//white team
+        {
+            king = whiteTeam.king;
+        }
+        else//black team
+        {
+            king = blackTeam.king;
+        }
+        List<int[]> enemyMoves = getPossibleMoves(pieceChecking);
+        foreach (int[] spot in enemyMoves) //check spot of it is the spot of king
+        {
+            if (spot != null)
+            {
+                if (spot[0] == king.getX() && spot[1] == king.getY())//does contain spot
+                {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
-    public bool checkForCheckmates(bool teamBeingChecked)//checks for a checkmates
+    public bool checkForCheckmates(bool teamBeingChecked)//checks for a checkmates //DONE, LOOKOVER
     {
-        return false;
+        Agent group;
+        if (teamBeingChecked)//white team
+        {
+            group = whiteTeam;
+        }
+        else//black team
+        {
+            group = blackTeam;
+        }
+        Piece king = group.king;
+
+        int[,] aroundSpots = new int[,] { {-1,-1 }, { 0, -1 }, { 1, -1 },
+                                              {-1, 0 },            { 1,  0 } ,
+                                              {-1, 1 }, { 0,  1 }, { 1 , 1 }};
+        List<int[]> kingMoves = new List<int[]>();
+        //int spotChecks = 0;
+        for (int i = 0; i < 8; i++)//check the spots around the king
+        {
+            if (tileWithinBoard(king.getX() + aroundSpots[i, 0], king.getY() + aroundSpots[i, 1]))//tile inbounds
+            {
+                if (!somethingOnTile(king.getX() + aroundSpots[i, 0], king.getY() + aroundSpots[i, 1], true, false))//if there is nothing on a tile
+                {
+                    kingMoves.Add(new int[] { king.getX() + aroundSpots[i, 0], king.getY() + aroundSpots[i, 1] });
+                }
+            }
+        }
+        if (willMakeCheck(king, kingMoves).Count > 0)//if there is a spot that the king can move
+        {
+            return false;
+        }
+        foreach (Piece p in group.pieces)
+        {
+            List<int[]> pMoves = containsSameTiles(interceptionTiles(king), getPossibleMoves(p));
+            pMoves = willMakeCheck(p, pMoves);
+            if (pMoves.Count > 0)
+            {//figures out if there are any spots that piece other than the king can move to to stop a checkmate
+                return false;
+            }
+        }
+        return true;
     }
 
-    public bool checkForStalemates(bool teamToCheck)//checks to see if there is a stalemate
+    public bool checkForStalemates(bool teamToCheck)//checks to see if there is a stalemate //DONE
     {
+        if (!check)//if there is a check
+        {
+            List<Piece> listOfPieces;
+            if (teamToCheck)//white team
+            {
+                listOfPieces = whiteTeam.pieces;
+            }
+            else//black team
+            {
+                listOfPieces = blackTeam.pieces;
+            }
+            foreach (Piece p in listOfPieces)
+            {
+                if (getPossibleMoves(p).Count > 0)//if any piece can move
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
         return false;
     }
 
@@ -415,6 +512,20 @@ public class Game : MonoBehaviour
         {
             return blackTeam.pieces;
         }
+    }
+
+    public void deletePiece(Piece piece) //removes a piece and gameObject from game
+    {
+        if (piece.getTeam())//white side
+        {
+            whiteTeam.pieces.Remove(piece);
+        }
+        else//black side
+        {
+            whiteTeam.pieces.Remove(piece);
+        }
+        Destroy(board[piece.getX(), piece.getY()].gameObject); //destroys the object that represents the piece
+        board[piece.getX(), piece.getY()] = null;
     }
 
      ///Piece movements///
