@@ -31,7 +31,7 @@ public class Piece : MonoBehaviour {
     // Update is called once per frame
     void Update()
     {
-
+        
     }
 
     public Piece() //contructor
@@ -63,7 +63,6 @@ public class Piece : MonoBehaviour {
     }
 
     //Getters and Setters
-
     public int getX()//return x location
     {
         return x;
@@ -177,6 +176,11 @@ public class Piece : MonoBehaviour {
     public List<int[]> getMoves()
     {
         return moves;
+    }
+
+    public void clickedPiece() //the piece was clicked
+    {
+        Debug.Log(team + " " + type);
     }
 
     //private void determineImage()

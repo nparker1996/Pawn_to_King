@@ -54,6 +54,8 @@ public class Game : MonoBehaviour
         REF_UI_BUTTON = GameObject.Find("Button_Start").GetComponent<UnityEngine.UI.Button>();
 
         board = new Piece[8, 8];
+
+        newGame();
     }
 
     // Update is called once per frame
@@ -77,6 +79,9 @@ public class Game : MonoBehaviour
         //switch () { }
         //REF_UI_BUTTON.GetComponentInChildren<Text>().text = "Restart";
         //timer.Enabled = true;
+        whiteTeam = new Human(this, true);
+        blackTeam = new Human(this, false);
+
         whoseTurn = true;
         check = false;
         checkmate = false;
@@ -85,11 +90,6 @@ public class Game : MonoBehaviour
         resetBoard();
         makeBoard();
         updateText(true);
-    }
-
-    private void clickedPiece()
-    {
-
     }
 
     private void clickedTile() //when you click a tile that is highlighted
@@ -497,9 +497,42 @@ public class Game : MonoBehaviour
         return new List<int[]>();
     }
 
-    List<int[]> containsSameTiles(List<int[]> smallerList, List<int[]> largerList)//returns the tiles that are the same
+    List<int[]> containsSameTiles(List<int[]> smallerList, List<int[]> largerList)//returns the tiles that are the same //DONE
     {
-        return new List<int[]>();
+        List<int[]> tiles = new List<int[]>();
+        if (smallerList.Count <= 0 || largerList.Count <= 0) { return tiles; }//nothing is in one of the Lists
+        if (largerList.Count < smallerList.Count) //switches list if needed
+        {
+            List<int[]> temp = smallerList;
+            smallerList = largerList;
+            largerList = temp;
+        }
+        for (int i = 0; i < largerList.Count; i++)//gets rid of null tiles
+        {
+            if (largerList[i] == null)
+            {
+                largerList.Remove(largerList[i]);
+                i--;
+            }
+        }
+        for (int i = 0; i < smallerList.Count; i++)
+        {
+            if (smallerList[i] == null)
+            {
+                smallerList.Remove(smallerList[i]);
+                i--;
+            }
+        }
+
+        foreach(int[] smallTile in smallerList)
+        {
+            if (largerList.Contains(smallTile))//if tile is within larger group
+            {
+                tiles.Add(smallTile);
+            }
+        }
+
+        return tiles;
     }
 
     public List<Piece> getTeamPieces(bool team) //DONE
@@ -514,7 +547,7 @@ public class Game : MonoBehaviour
         }
     }
 
-    public void deletePiece(Piece piece) //removes a piece and gameObject from game
+    public void deletePiece(Piece piece) //removes a piece and gameObject from game //DONE
     {
         if (piece.getTeam())//white side
         {
