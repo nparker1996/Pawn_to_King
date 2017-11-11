@@ -4,6 +4,14 @@ using UnityEngine;
 
 public class Piece : MonoBehaviour {
 
+    //list of pawn types that are constant
+    public const int TYPE_PAWN = 0;
+    public const int TYPE_KNIGHT = 1;
+    public const int TYPE_BISHOP = 2;
+    public const int TYPE_ROOK = 3;
+    public const int TYPE_QUEEN = 4;
+    public const int TYPE_KING = 5;
+
     private int x; //x location of a piece
     private int y; //y location of a piece
     [SerializeField] private bool team; // team of the piece // true = white, false = black
@@ -114,20 +122,20 @@ public class Piece : MonoBehaviour {
     {
         switch (type)
         {
-            case 0: //pawn
+            case TYPE_PAWN: //pawn
                 value = 1;
                 break;
-            case 1: //knight
-            case 2: //bishop
+            case TYPE_KNIGHT: //knight
+            case TYPE_BISHOP: //bishop
                 value = 3;
                 break;
-            case 3: //rook
+            case TYPE_ROOK: //rook
                 value = 5;
                 break;
-            case 4: //queen
+            case TYPE_QUEEN: //queen
                 value = 9;
                 break;
-            case 5://king
+            case TYPE_KING://king
                 value = 10;
                 break;
             default:
