@@ -32,7 +32,8 @@ public class Game : MonoBehaviour
     [SerializeField]
     private GameObject REF_B_PAWN;
 
-
+    private GameObject playerWhiteTeam; //object agent script is being held in
+    private GameObject playerBlackTeam; //object agent script is being held in
     public Agent whiteTeam; //white team
     public Agent blackTeam; //black team
     public Piece[,] board; //width, height
@@ -76,11 +77,16 @@ public class Game : MonoBehaviour
 
     private void newGame()//create a new game
     {
+        Debug.Log("new Game");
         //switch () { }
         //REF_UI_BUTTON.GetComponentInChildren<Text>().text = "Restart";
         //timer.Enabled = true;
-        whiteTeam = new Human(this, true);
-        blackTeam = new Human(this, false);
+        playerWhiteTeam = GameObject.Find("Player_White");
+        playerBlackTeam = GameObject.Find("Player_Black");
+        playerWhiteTeam.AddComponent<Human>();
+        playerBlackTeam.AddComponent<Human>();
+        whiteTeam = playerWhiteTeam.GetComponent<Agent>();
+        blackTeam = playerBlackTeam.GetComponent<Agent>();
 
         whoseTurn = true;
         check = false;
@@ -141,39 +147,38 @@ public class Game : MonoBehaviour
         //Repopulates White Side
         for (int pawnNum = 0; pawnNum <= 7; pawnNum++) //create all 8 white pawns
         {
-            addPieceToBoard(pawnNum, 6, true, 0);
+            addPieceToBoard(pawnNum, 6, true, Piece.TYPE_PAWN);
         }
 
-        addPieceToBoard(0, 7, true, 3);//(0,7) white rook
-        addPieceToBoard(1, 7, true, 1);//(1,7) white knight
-        addPieceToBoard(2, 7, true, 2);//(2,7) white bishop
-        addPieceToBoard(3, 7, true, 4);//(3,7) white queen
-        addPieceToBoard(4, 7, true, 5);//(4,7) white king
+        addPieceToBoard(0, 7, true, Piece.TYPE_ROOK);//(0,7) white rook
+        addPieceToBoard(1, 7, true, Piece.TYPE_KNIGHT);//(1,7) white knight
+        addPieceToBoard(2, 7, true, Piece.TYPE_BISHOP);//(2,7) white bishop
+        addPieceToBoard(3, 7, true, Piece.TYPE_QUEEN);//(3,7) white queen
+        addPieceToBoard(4, 7, true, Piece.TYPE_KING);//(4,7) white king
         whiteTeam.king = board[4, 7]; //assign king piece
-        addPieceToBoard(5, 7, true, 2);//(5,7) white bishop
-        addPieceToBoard(6, 7, true, 1);//(6,7) white knight
-        addPieceToBoard(7, 7, true, 3);//(7,7) white rook
+        addPieceToBoard(5, 7, true, Piece.TYPE_BISHOP);//(5,7) white bishop
+        addPieceToBoard(6, 7, true, Piece.TYPE_KNIGHT);//(6,7) white knight
+        addPieceToBoard(7, 7, true, Piece.TYPE_ROOK);//(7,7) white rook
 
         //Repopulates Black Side
         for (int pawnNum = 0; pawnNum <= 7; pawnNum++) //create all 8 black pawns
         {
-            addPieceToBoard(pawnNum, 1, false, 0);
+            addPieceToBoard(pawnNum, 1, false, Piece.TYPE_PAWN);
         }
 
-        addPieceToBoard(0, 0, false, 3);//(0,7) black rook
-        addPieceToBoard(1, 0, false, 1);//(1,7) black knight
-        addPieceToBoard(2, 0, false, 2);//(2,7) black bishop
-        addPieceToBoard(3, 0, false, 4);//(3,7) black queen
-        addPieceToBoard(4, 0, false, 5);//(4,7) black king
+        addPieceToBoard(0, 0, false, Piece.TYPE_ROOK);//(0,7) black rook
+        addPieceToBoard(1, 0, false, Piece.TYPE_KNIGHT);//(1,7) black knight
+        addPieceToBoard(2, 0, false, Piece.TYPE_BISHOP);//(2,7) black bishop
+        addPieceToBoard(3, 0, false, Piece.TYPE_QUEEN);//(3,7) black queen
+        addPieceToBoard(4, 0, false, Piece.TYPE_KING);//(4,7) black king
         blackTeam.king = board[4, 0]; //assign king piece
-        addPieceToBoard(5, 0, false, 2);//(5,7) black bishop
-        addPieceToBoard(6, 0, false, 1);//(6,7) black knight
-        addPieceToBoard(7, 0, false, 3);//(7,7) black rook
+        addPieceToBoard(5, 0, false, Piece.TYPE_BISHOP);//(5,7) black bishop
+        addPieceToBoard(6, 0, false, Piece.TYPE_KNIGHT);//(6,7) black knight
+        addPieceToBoard(7, 0, false, Piece.TYPE_ROOK);//(7,7) black rook
     }
 
     void addPieceToBoard(int x, int y, bool team, int pieceType)//add a piece to location on the board //DONE
     {
-        board[x, y] = Instantiate(REF_B_ROOK).GetComponent<Piece>();
         if (team)//white side
         {
             switch (pieceType) //create instatiation of piece
