@@ -183,37 +183,4 @@ public class Piece : MonoBehaviour {
     {
         return moves;
     }
-
-    //private void determineImage()
-    //{
-    //    char teamColor = 'B';
-    //    if (this.team)//same team that is wanted
-    //    {
-    //        teamColor = 'W';
-    //    }
-    //    switch (type)
-    //    {
-    //        case 0: //pawn
-    //            image.Image = Image.FromFile("images/" + teamColor + "Pawn.png");
-    //            break;
-    //        case 1: //knight
-    //            image.Image = Image.FromFile("images/" + teamColor + "Knight.png");
-    //            // box.Image = Image.FromFile("images/" + team + "KnightTest.png");
-    //            break;
-    //        case 2: //bishop
-    //            image.Image = Image.FromFile("images/" + teamColor + "Bishop.png");
-    //            break;
-    //        case 3: //rook
-    //            image.Image = Image.FromFile("images/" + teamColor + "Rook.png");
-    //            break;
-    //        case 4: //queen
-    //            image.Image = Image.FromFile("images/" + teamColor + "Queen.png");
-    //            break;
-    //        case 5: //king
-    //            image.Image = Image.FromFile("images/" + teamColor + "King.png");
-    //            break;
-    //        default:
-    //            break;
-    //    }
-    //}
 }

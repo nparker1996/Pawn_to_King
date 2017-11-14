@@ -107,16 +107,14 @@ public class Game : MonoBehaviour
         updateText(true);
     }
 
-    public void clickedPiece(int xx, int yy) //the piece was clicked
+    public void clickedPiece(int xx, int yy) //the piece was clicked //DONE
     {
-        Debug.Log("Test 1");
         if (!checkmate && PromotePawn)//a checkmate has not occurred && if there is a pawn to promote, wait until it is promoted
         {
-            Debug.Log("Test 2");
             if ((whoseTurn == whiteTeam.team && whiteTeam.type == "Human") || (whoseTurn == blackTeam.team && blackTeam.type == "Human")) //so only works if playing as a human
             {
-                Debug.Log("Test 3");
-                listOfOverlays.Clear();
+                foreach(GameObject overlay in listOfOverlays) { Destroy(overlay); }//destroys each overlay current
+                listOfOverlays.Clear();//clears list
                     
                 if (board[xx, yy].getTeam() == whoseTurn)//only click piece that is their turn
                 {
@@ -136,10 +134,8 @@ public class Game : MonoBehaviour
                     {
                         if (tile != null) //Tile exists
                         {
-                           
                             if (teamOnTile(tile[0], tile[1], !selectedPiece.getTeam())) //enemy on tile
                             {
-                                
                                 GameObject box = Instantiate(REF_ENEMY_OVERLAY);
                                 box.GetComponent<Overlay>().setLocation(tile[0], tile[1]);
                                 listOfOverlays.Add(box);
@@ -160,9 +156,62 @@ public class Game : MonoBehaviour
        
     }
 
-    public void clickedTile(int xx, int yy) //when you click a tile that is highlighted
+    public void clickedTile(int xx, int yy) //when you click a tile that is highlighted //DONE
     {
+        foreach (GameObject overlay in listOfOverlays) { Destroy(overlay); }//destroys each overlay current
+        listOfOverlays.Clear();//clears list
 
+        //castling
+        if (selectedPiece.getType() == Piece.TYPE_KING && !selectedPiece.getMoved())//is a king and hasn't moved
+        {
+            if (xx == 2)//left
+            {
+                movePieceToTile(board[0, yy], 3, yy); //move left rook to proper location
+            }
+            else if (xx == 6)//right
+            {
+                movePieceToTile(board[7, yy], 5, yy); //move right rook to proper location
+            }
+        }
+
+        //en passant or pawn double 
+        if (selectedPiece.getType() == 0)//is a pawn
+        {
+            //pawn double move
+            if (System.Math.Abs(selectedPiece.getY() - yy) >= 2)
+            {
+                selectedPiece.setPawnDoubleMove(true);
+            }
+
+            //pawn en passant
+            if (selectedPiece.getX() != xx)//aka moving diagnal
+            {
+                if (board[xx, yy] == null)
+                {
+                    if (board[xx, selectedPiece.getY()].getTeam())//white Team
+                    {
+                        whiteTeam.pieces.Remove(board[xx, selectedPiece.getY()]);
+                        blackTeam.points += board[xx, selectedPiece.getY()].getValue();
+                    }
+                    else//black team
+                    {
+                        blackTeam.pieces.Remove(board[xx, selectedPiece.getY()]);
+                        whiteTeam.points += board[xx, selectedPiece.getY()].getValue();
+                    }
+                    Destroy(board[xx, selectedPiece.getY()].gameObject); //destory piece being captured
+                    board[xx, selectedPiece.getY()] = null;
+                }
+            }
+        }
+
+        movePieceToTile(selectedPiece, xx, yy);//moves the piece
+
+        pawnPromotion(selectedPiece);
+
+        if (PromotePawn)//if there is a pawn to promote, wait until it is promoted
+        {
+            nextTurn();
+        }
     }
 
     public void ClickedPieceAI(Piece piece, int xx, int yy) //click piece method for the AI and move it
@@ -460,9 +509,51 @@ public class Game : MonoBehaviour
         return true;
     }
 
-    public List<int[]> willMakeCheck(Piece piece, List<int[]> tiles) // checks to see if the piece moves, will it make a check?
+    public List<int[]> willMakeCheck(Piece piece, List<int[]> tiles) // checks to see if the piece moves, will it make a check?//DONE
     {
-        return new List<int[]>();
+
+        //tiles are the spots that piece will move to
+        if (tiles.Count == 0)
+        {
+            return tiles;
+        }
+        Piece[,] temptBoard = new Piece[8, 8];
+        System.Array.Copy(board, temptBoard, 64); //copies board to tempBoard
+        List<int[]> canMove = new List<int[]>(); //spots that can be moved to that will not cause a check
+        canMove.AddRange(tiles);
+        foreach (int[] tile in tiles)
+        {
+            //sets location in temptBoard, but does not change anything in the actual board
+            temptBoard[piece.getX(), piece.getY()] = null;
+            temptBoard[tile[0], tile[1]] = piece;
+            List<Piece> enemyPieces = getTeamPieces(!piece.getTeam());//gets all piece of enemy team
+            foreach(Piece eP in enemyPieces)
+            {
+                int xDir = eP.getX();
+                int yDir = eP.getY();
+                if (piece.getType() == Piece.TYPE_KING)//is the king
+                {
+                    List<int[]> enemyMoves = getPossibleMoves(board[xDir, yDir]);
+                    if (board[xDir, yDir].getType() == Piece.TYPE_PAWN) //pawn attack is different than movement
+                    {
+                        enemyMoves.Clear();
+                        enemyMoves.AddRange(pawnTakePiece(board[xDir, yDir], true));
+                    }
+                    if (enemyMoves.Contains(tile))//if any enemy can move to spot
+                    {
+                        canMove.Remove(tile); //remove from list
+                        break;
+                    }
+                }
+                else if (checkForChecks(piece.getTeam(), board[xDir, yDir]))
+                {
+                    canMove.Remove(tile);
+                    break;
+                }
+            }
+        }
+
+        return canMove;
     }
 
     public bool checkForChecks(bool teamBeingChecked, Piece pieceChecking)//checks for a check //DONE
@@ -952,6 +1043,7 @@ public class Game : MonoBehaviour
 
         List<int[]> spotsInDirection(Piece piece, int xDir, int yDir)
         {
+        
             List<int[]> possibleMoves = new List<int[]>();
             int xx = piece.getX();
             int yy = piece.getY();
