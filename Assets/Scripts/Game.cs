@@ -31,6 +31,10 @@ public class Game : MonoBehaviour
     private GameObject REF_B_KNIGHT;
     [SerializeField]
     private GameObject REF_B_PAWN;
+    [SerializeField]
+    private GameObject REF_ENEMY_OVERLAY;
+    [SerializeField]
+    private GameObject REF_MOVE_OVERLAY;
 
     private GameObject playerWhiteTeam; //object agent script is being held in
     private GameObject playerBlackTeam; //object agent script is being held in
@@ -48,12 +52,15 @@ public class Game : MonoBehaviour
     //Button[] fromPawn = new Button[4];
     private bool PromotePawn = true;
 
+    List<GameObject> listOfOverlays;//list of overlays that can be clicked on to move to
+
     // Use this for initialization
     void Start()
     {
         //setup all references
         REF_UI_BUTTON = GameObject.Find("Button_Start").GetComponent<UnityEngine.UI.Button>();
 
+        listOfOverlays = new List<GameObject>();
         board = new Piece[8, 8];
 
         newGame();
@@ -87,6 +94,8 @@ public class Game : MonoBehaviour
         playerBlackTeam.AddComponent<Human>();
         whiteTeam = playerWhiteTeam.GetComponent<Agent>();
         blackTeam = playerBlackTeam.GetComponent<Agent>();
+        whiteTeam.setTeam(true);
+        blackTeam.setTeam(false);
 
         whoseTurn = true;
         check = false;
@@ -98,7 +107,60 @@ public class Game : MonoBehaviour
         updateText(true);
     }
 
-    private void clickedTile() //when you click a tile that is highlighted
+    public void clickedPiece(int xx, int yy) //the piece was clicked
+    {
+        Debug.Log("Test 1");
+        if (!checkmate && PromotePawn)//a checkmate has not occurred && if there is a pawn to promote, wait until it is promoted
+        {
+            Debug.Log("Test 2");
+            if ((whoseTurn == whiteTeam.team && whiteTeam.type == "Human") || (whoseTurn == blackTeam.team && blackTeam.type == "Human")) //so only works if playing as a human
+            {
+                Debug.Log("Test 3");
+                listOfOverlays.Clear();
+                    
+                if (board[xx, yy].getTeam() == whoseTurn)//only click piece that is their turn
+                {
+                    selectedPiece = board[xx, yy];
+                    List<int[]> moves = new List<int[]>();
+                    if (selectedPiece.getMoves().Count == 0)//has not calculated possible spots
+                    {
+                        moves = getPossibleMoves(board[xx, yy]);
+                        moves = willMakeCheck(board[xx, yy], moves);// checks to see if piece moves to a spot will it chose a check?
+                        selectedPiece.getMoves().AddRange(moves);
+                    }
+                    else//has already calculated possible spots
+                    {
+                        moves = selectedPiece.getMoves();
+                    }
+                    foreach (int[] tile in moves)
+                    {
+                        if (tile != null) //Tile exists
+                        {
+                           
+                            if (teamOnTile(tile[0], tile[1], !selectedPiece.getTeam())) //enemy on tile
+                            {
+                                
+                                GameObject box = Instantiate(REF_ENEMY_OVERLAY);
+                                box.GetComponent<Overlay>().setLocation(tile[0], tile[1]);
+                                listOfOverlays.Add(box);
+
+                            }
+                            else //open tile
+                            {
+                                GameObject box = Instantiate(REF_MOVE_OVERLAY);
+                                box.GetComponent<Overlay>().setLocation(tile[0], tile[1]);
+                                listOfOverlays.Add(box);
+                            }
+                                
+                        }
+                    }
+                }
+            }
+         }
+       
+    }
+
+    public void clickedTile(int xx, int yy) //when you click a tile that is highlighted
     {
 
     }

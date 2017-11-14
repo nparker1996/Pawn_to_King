@@ -12,6 +12,7 @@ public class Piece : MonoBehaviour {
     public const int TYPE_QUEEN = 4;
     public const int TYPE_KING = 5;
 
+    private GameObject worldController;
     private int x; //x location of a piece
     private int y; //y location of a piece
     [SerializeField] private bool team; // team of the piece // true = white, false = black
@@ -25,13 +26,18 @@ public class Piece : MonoBehaviour {
     // Use this for initialization
     void Start()
     {
-        
+        worldController = GameObject.FindGameObjectWithTag("GameController");
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+
+    }
+
+    void OnMouseDown()
+    {
+        worldController.GetComponent<Game>().clickedPiece(x, y);
     }
 
     public Piece() //contructor
@@ -176,11 +182,6 @@ public class Piece : MonoBehaviour {
     public List<int[]> getMoves()
     {
         return moves;
-    }
-
-    public void clickedPiece() //the piece was clicked
-    {
-        Debug.Log(team + " " + type);
     }
 
     //private void determineImage()

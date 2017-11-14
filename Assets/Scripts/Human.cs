@@ -5,7 +5,11 @@ using UnityEngine;
 public class Human : Agent {
 
 	// Use this for initialization
-	void Start () {}
+	void Start ()
+    {
+        game = GameObject.FindGameObjectWithTag("GameController").GetComponent<Game>();
+        type = "Human";
+    }
 	
 	// Update is called once per frame
 	void Update () {}

@@ -12,7 +12,10 @@ public abstract class Agent : MonoBehaviour {
     public string type; //the type of controller (human or AI)
 
     // Use this for initialization
-    void Start () {}
+    void Start ()
+    {
+        game = GameObject.FindGameObjectWithTag("GameController").GetComponent<Game>();
+    }
 	
 	// Update is called once per frame
 	void Update () {}
@@ -27,6 +30,8 @@ public abstract class Agent : MonoBehaviour {
     }
 
     abstract public void turn();
+
+    public void setTeam(bool team) { this.team = team; }
 
     protected void printTurn()
     {
