@@ -5,7 +5,8 @@ using UnityEngine;
 public class Game : MonoBehaviour
 {
 
-    private UnityEngine.UI.Button REF_UI_BUTTON;
+    private UnityEngine.UI.Button REF_UI_BUTTON_START;
+    private UnityEngine.UI.Text REF_UI_LABEL_TURN;
 
     [SerializeField]
     private GameObject REF_W_KING;
@@ -58,7 +59,8 @@ public class Game : MonoBehaviour
     void Start()
     {
         //setup all references
-        REF_UI_BUTTON = GameObject.Find("Button_Start").GetComponent<UnityEngine.UI.Button>();
+        REF_UI_BUTTON_START = GameObject.Find("Button_Start").GetComponent<UnityEngine.UI.Button>();
+        REF_UI_LABEL_TURN = GameObject.Find("Text_Label_Turn").GetComponent<UnityEngine.UI.Text>();
 
         listOfOverlays = new List<GameObject>();
         board = new Piece[8, 8];
@@ -214,9 +216,41 @@ public class Game : MonoBehaviour
         }
     }
 
-    public void ClickedPieceAI(Piece piece, int xx, int yy) //click piece method for the AI and move it
+    public void ClickedPieceAI(Piece piece, int xx, int yy) //click piece method for the AI and move it //DONE
     {
+        if (!checkmate)//a checkmate has not occurred
+        {
+            foreach (GameObject overlay in listOfOverlays) { Destroy(overlay); }//destroys each overlay current
+            listOfOverlays.Clear();//clears list
 
+            if (piece.getTeam() == whoseTurn)//only click piece that is their turn
+            {
+                selectedPiece = piece;
+            }
+
+            ///move piece///
+            //castling
+            if (selectedPiece.getType() == Piece.TYPE_KING && !selectedPiece.getMoved())//is a king and hasn't moved
+            {
+                if (xx == 2)//left
+                {
+                    movePieceToTile(board[0, yy], 3, yy);
+                }
+                else if (xx == 6)//right
+                {
+                    movePieceToTile(board[7, yy], 5, yy);
+                }
+            }
+
+            //pawn promoting
+            if (selectedPiece.getType() == Piece.TYPE_PAWN && ((yy == 0 && selectedPiece.getTeam()) || (yy == 7 && !selectedPiece.getTeam())))
+            {
+                selectedPiece.setType(AI_PawnPromotion(selectedPiece, xx, yy));
+            }
+
+            movePieceToTile(selectedPiece, xx, yy);//moves the piece
+            nextTurn();
+        }
     }
 
     private void RemoveSelected() //removes the selectedPiece to clear the board
@@ -402,9 +436,41 @@ public class Game : MonoBehaviour
         updateText(whoseTurn);
     }
 
-    public void updateText(bool whoIsCheckmated)//updates the text on the screen
+    public void updateText(bool whoIsCheckmated)//updates the text on the screen //DONE
     {
-
+        if (stalemate)
+        {
+            REF_UI_LABEL_TURN.text = "Stalemate, it is a tie...";
+            Debug.Log("Stalemate, it is a tie...");
+        }
+        else if (checkmate)//there is a checkmate
+        {
+            if (whoIsCheckmated)//black team wins
+            {
+                REF_UI_LABEL_TURN.text = "BLACK WINS!!";
+                Debug.Log("BLACK WINS!!");
+            }
+            else//white team wins
+            {
+                REF_UI_LABEL_TURN.text = "WHITE WINS!!";
+                Debug.Log("WHITE WINS!!");
+            }
+        }
+        else {
+            REF_UI_LABEL_TURN.text = "Turn: " + turnCount + "      ";
+            if (whoseTurn)//white team
+            {
+                REF_UI_LABEL_TURN.text += "White's move";
+            }
+            else//blac team
+            {
+                REF_UI_LABEL_TURN.text += "Black's move";
+            }
+            if (check)
+            {
+                REF_UI_LABEL_TURN.text += "     Check";
+            }
+        }
     }
 
     public List<int[]> getPossibleMoves(Piece piece)  //get locations piece can move, //DONE
@@ -653,7 +719,64 @@ public class Game : MonoBehaviour
 
     List<int[]> interceptionTiles(Piece piece)//figures out the tiles that can be moved to to stop piece from being taken
     {
-        return new List<int[]>();
+        List<int[]> possibleTiles = new List<int[]>(); //of possible moves piece can make
+                                                       //for queen, bishops, and rooks
+        for (int i = -1; i <= 1; i++)//x direction
+        {
+            for (int j = -1; j <= 1; j++)//y direction
+            {
+                if (i != 0 || j != 0)//to makes sure that both are not 0
+                {
+                    possibleTiles.AddRange(spotsInDirection(piece, i, j));
+                    foreach (int[] tile in possibleTiles)
+                    {
+                        if (board[tile[0], tile[1]] != null)
+                        {
+                            if (board[tile[0], tile[1]].getTeam() != piece.getTeam())
+                            {
+                                if (i == 0 || j == 0)//rook or queen
+                                {
+                                    if (board[tile[0], tile[1]].getType() == 3 || board[tile[0], tile[1]].getType() == 4)
+                                    {
+                                        return possibleTiles;
+                                    }
+                                }
+                                else//bishop or queen
+                                {
+                                    if (board[tile[0], tile[1]].getType() == 2 || board[tile[0], tile[1]].getType() == 4)
+                                    {
+                                        return possibleTiles;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    possibleTiles.Clear();
+                }
+            }
+        }
+
+        //knights
+        possibleTiles.Clear();
+        possibleTiles.AddRange(knightNormalMove(piece));
+        foreach (int[] tile in possibleTiles)
+        {
+            if (board[tile[0], tile[1]] != null)
+            {
+                if (board[tile[0], tile[1]].getTeam() != piece.getTeam())
+                {
+                    if (board[tile[0], tile[1]].getType() == 1)//knight
+                    {
+                        List<int[]> knight = new List<int[]>();
+                        knight.Add(tile);
+                        return knight;
+                    }
+                }
+            }
+        }
+        possibleTiles.Clear();
+        possibleTiles.AddRange(pawnTakePiece(piece, true)); //Pawn
+        return possibleTiles;
     }
 
     List<int[]> containsSameTiles(List<int[]> smallerList, List<int[]> largerList)//returns the tiles that are the same //DONE
