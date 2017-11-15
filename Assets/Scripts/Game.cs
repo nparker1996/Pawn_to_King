@@ -495,6 +495,7 @@ public class Game : MonoBehaviour
             }
             deletePiece(board[X, Y]); //piece is deleted
         }
+        board[piece.getX(), piece.getY()] = null; //removes piece from previous location
         board[X, Y] = piece; //puts piece on new tile
         piece.setLocation(X, Y);
         piece.addMoveCount(1);
@@ -1043,13 +1044,12 @@ public class Game : MonoBehaviour
 
         List<int[]> spotsInDirection(Piece piece, int xDir, int yDir)
         {
-        
             List<int[]> possibleMoves = new List<int[]>();
             int xx = piece.getX();
             int yy = piece.getY();
             for(int i = 1; true; i++)
             {
-                if (tileWithinBoard(xx + (xDir * i), yy + (yDir * i)))
+            if (tileWithinBoard(xx + (xDir * i), yy + (yDir * i)))
                 {
                     if (!somethingOnTile(xx + (xDir * i), yy + (yDir * i), true, !piece.getTeam())) //tile is empty or has the opposite team on it
                     {
