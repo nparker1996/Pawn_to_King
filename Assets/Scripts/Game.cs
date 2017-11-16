@@ -6,6 +6,8 @@ public class Game : MonoBehaviour
 {
 
     private UnityEngine.UI.Button REF_UI_BUTTON_START;
+    private UnityEngine.UI.Dropdown REF_UI_DROPDOWN_WHITE;
+    private UnityEngine.UI.Dropdown REF_UI_DROPDOWN_BLACK;
     private UnityEngine.UI.Text REF_UI_LABEL_TURN;
 
     [SerializeField]
@@ -60,12 +62,12 @@ public class Game : MonoBehaviour
     {
         //setup all references
         REF_UI_BUTTON_START = GameObject.Find("Button_Start").GetComponent<UnityEngine.UI.Button>();
+        REF_UI_DROPDOWN_WHITE = GameObject.Find("Dropdown_White").GetComponent<UnityEngine.UI.Dropdown>();
+        REF_UI_DROPDOWN_BLACK = GameObject.Find("Dropdown_Black").GetComponent<UnityEngine.UI.Dropdown>();
         REF_UI_LABEL_TURN = GameObject.Find("Text_Label_Turn").GetComponent<UnityEngine.UI.Text>();
 
         listOfOverlays = new List<GameObject>();
         board = new Piece[8, 8];
-
-        newGame();
     }
 
     // Update is called once per frame
@@ -73,27 +75,29 @@ public class Game : MonoBehaviour
     {
         if (!checkmate)
         {
-            if (whoseTurn == whiteTeam.team && whiteTeam.type != "Human") //white AI
+            if (whiteTeam != null && blackTeam != null)
             {
-                whiteTeam.turn();
-            }
-            else if (whoseTurn == blackTeam.team && blackTeam.type != "Human") //black AI
-            {
-                blackTeam.turn();
+                if (whoseTurn == whiteTeam.team && whiteTeam.type != "Human") //white AI
+                {
+                    whiteTeam.turn();
+                }
+                else if (whoseTurn == blackTeam.team && blackTeam.type != "Human") //black AI
+                {
+                    blackTeam.turn();
+                }
             }
         }
     }
 
-    private void newGame()//create a new game
+    public void newGame()//create a new game
     {
         Debug.Log("new Game");
-        //switch () { }
-        //REF_UI_BUTTON.GetComponentInChildren<Text>().text = "Restart";
-        //timer.Enabled = true;
+        foreach (GameObject overlay in listOfOverlays) { Destroy(overlay); }//destroys each overlay current
+        listOfOverlays.Clear();//clears list
         playerWhiteTeam = GameObject.Find("Player_White");
         playerBlackTeam = GameObject.Find("Player_Black");
-        playerWhiteTeam.AddComponent<Human>();
-        playerBlackTeam.AddComponent<Human>();
+        setAgent(playerWhiteTeam, REF_UI_DROPDOWN_WHITE.options[REF_UI_DROPDOWN_WHITE.value].text);
+        setAgent(playerBlackTeam, REF_UI_DROPDOWN_BLACK.options[REF_UI_DROPDOWN_BLACK.value].text);
         whiteTeam = playerWhiteTeam.GetComponent<Agent>();
         blackTeam = playerBlackTeam.GetComponent<Agent>();
         whiteTeam.setTeam(true);
@@ -107,6 +111,35 @@ public class Game : MonoBehaviour
         resetBoard();
         makeBoard();
         updateText(true);
+    }
+
+    private void setAgent(GameObject team, string inputType) //sets the type of Agent for each AI
+    {
+        switch (inputType)
+        {
+            case "Optimal Decision":
+
+                break;
+            case "Maximin":
+                team.AddComponent<Maximin_AI>();
+                break;
+            case "Random":
+
+                break;
+            case "Neural Network":
+
+                break;
+            case "Three Stage":
+
+                break;
+            case "Variable":
+
+                break;
+            case "Human":
+            default:
+                team.AddComponent<Human>();
+                break;
+        }
     }
 
     public void clickedPiece(int xx, int yy) //the piece was clicked //DONE
@@ -216,7 +249,7 @@ public class Game : MonoBehaviour
         }
     }
 
-    public void ClickedPieceAI(Piece piece, int xx, int yy) //click piece method for the AI and move it //DONE
+    public void clickedPieceAI(Piece piece, int xx, int yy) //click piece method for the AI and move it //DONE
     {
         if (!checkmate)//a checkmate has not occurred
         {

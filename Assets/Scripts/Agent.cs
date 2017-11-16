@@ -14,6 +14,10 @@ public abstract class Agent : MonoBehaviour {
     // Use this for initialization
     void Start ()
     {
+    }
+
+    void Awake()
+    {
         game = GameObject.FindGameObjectWithTag("GameController").GetComponent<Game>();
     }
 	

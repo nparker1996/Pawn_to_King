@@ -7,7 +7,6 @@ public class Human : Agent {
 	// Use this for initialization
 	void Start ()
     {
-        game = GameObject.FindGameObjectWithTag("GameController").GetComponent<Game>();
         type = "Human";
     }
 	
