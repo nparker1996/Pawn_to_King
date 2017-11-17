@@ -9,6 +9,7 @@ public class Game : MonoBehaviour
     private UnityEngine.UI.Dropdown REF_UI_DROPDOWN_WHITE;
     private UnityEngine.UI.Dropdown REF_UI_DROPDOWN_BLACK;
     private UnityEngine.UI.Text REF_UI_LABEL_TURN;
+    private UnityEngine.UI.Text REF_UI_TEXT_PAWN_PROMOTION;
 
     [SerializeField]
     private GameObject REF_W_KING;
@@ -65,6 +66,8 @@ public class Game : MonoBehaviour
         REF_UI_DROPDOWN_WHITE = GameObject.Find("Dropdown_White").GetComponent<UnityEngine.UI.Dropdown>();
         REF_UI_DROPDOWN_BLACK = GameObject.Find("Dropdown_Black").GetComponent<UnityEngine.UI.Dropdown>();
         REF_UI_LABEL_TURN = GameObject.Find("Text_Label_Turn").GetComponent<UnityEngine.UI.Text>();
+        REF_UI_TEXT_PAWN_PROMOTION = GameObject.Find("Text_Pawn").GetComponent<UnityEngine.UI.Text>();
+        REF_UI_TEXT_PAWN_PROMOTION.gameObject.SetActive(false);
 
         listOfOverlays = new List<GameObject>();
         board = new Piece[8, 8];
@@ -240,7 +243,7 @@ public class Game : MonoBehaviour
 
         movePieceToTile(selectedPiece, xx, yy);//moves the piece
 
-        pawnPromotion(selectedPiece);
+        pawnPromotion();
 
         if (PromotePawn)//if there is a pawn to promote, wait until it is promoted
         {
@@ -356,7 +359,7 @@ public class Game : MonoBehaviour
         addPieceToBoard(7, 0, false, Piece.TYPE_ROOK);//(7,7) black rook
     }
 
-    void addPieceToBoard(int x, int y, bool team, int pieceType)//add a piece to location on the board //DONE
+    Piece addPieceToBoard(int x, int y, bool team, int pieceType)//add a piece to location on the board //DONE
     {
         if (team)//white side
         {
@@ -409,6 +412,7 @@ public class Game : MonoBehaviour
             blackTeam.pieces.Add(board[x, y]); //adds piece to team
         }
         board[x, y].setLocation(x, y); //set location on board of the piece
+        return board[x, y];
     }
 
     void nextTurn()//moves to the next turn //DONE
@@ -866,486 +870,496 @@ public class Game : MonoBehaviour
         }
         else//black side
         {
-            whiteTeam.pieces.Remove(piece);
+            blackTeam.pieces.Remove(piece);
         }
         Destroy(board[piece.getX(), piece.getY()].gameObject); //destroys the object that represents the piece
         board[piece.getX(), piece.getY()] = null;
     }
 
+    public void changePieceType(Piece piece, int toType) //changes one piece to a different type //DONE
+    {
+        int[] oldLocation = piece.getLocation();
+        bool oldTeam = piece.getTeam();
+        int oldMoveCount = piece.getMoveCount();
+        deletePiece(piece);
+        Piece newPiece = addPieceToBoard(oldLocation[0], oldLocation[1], oldTeam, toType);
+        newPiece.setMoved(); //sets moved to true
+        newPiece.setMoveCount(oldMoveCount);
+        
+    }
+
      ///Piece movements///
 
-        //Pawn//
-        int[] pawnStartMove(Piece pawn)//pawn moves two if haven't moved yet
-        {
-            if (!pawn.getMoved()) //pawn has not moved
-            {
-                if (pawn.getTeam())//white team
-                {
-                    if (tileWithinBoard(pawn.getX(), pawn.getY() - 1) && tileWithinBoard(pawn.getX(), pawn.getY() - 2))
-                    {
-                        if (somethingOnTile(pawn.getX(), pawn.getY() - 1, false, false))//if there is a piece on the tile infront of it
-                        {
-                            return null;
-                        }
-                        else if (somethingOnTile(pawn.getX(), pawn.getY() - 2, false, false)) //there is nothing 2 spots infront
-                        {
-                            return null;
-                        }
-                        return new int[] { pawn.getX(), pawn.getY() - 2 }; //nothing there
-                    }
-                    return null;
-                }
-                else//back team
-                {
-                    if (tileWithinBoard(pawn.getX(), pawn.getY() + 1) && tileWithinBoard(pawn.getX(), pawn.getY() + 2))
-                    {
-                        if (somethingOnTile(pawn.getX(), pawn.getY() + 1, false, false))//if there is a piece on the tile infront of it
-                        {
-                            return null;
-                        }
-                        else if (somethingOnTile(pawn.getX(), pawn.getY() + 2, false, false)) //there is nothing 2 spots infront
-                        {
-                            return null;
-                        }
-                        return new int[] { pawn.getX(), pawn.getY() + 2 }; //nothing there or enemy piece
-                    }
-                    return null;
-                }
-            }
-            return null;
-        }
-
-        int[] pawnEnPassant(Piece pawn) //pawn special move of en passant
-        {
-            if(pawn.getTeam() && pawn.getY() == 3)//white and on row 3
-            {
-                if (tileWithinBoard(pawn.getX() - 1, pawn.getY())) //within the board, tile to left
-                {
-                    if (board[pawn.getX() - 1, pawn.getY()] != null)//there is a piece on the tile
-                    {
-                        if(board[pawn.getX() - 1, pawn.getY()].getType() == 0 && board[pawn.getX() - 1, pawn.getY()].getTeam() != pawn.getTeam() && board[pawn.getX() - 1, pawn.getY()].getPawnDoubleMove())//piece is a pawn, not on the same team, and just moved two spaces
-                        {
-                            return new int[] { pawn.getX() - 1, pawn.getY() - 1 };
-                        }
-                    }
-                }
-                if(tileWithinBoard(pawn.getX() + 1, pawn.getY()))//within the board, tile to right
-                {
-                    if (board[pawn.getX() + 1, pawn.getY()] != null)//there is a piece on the tile
-                    {
-                        if (board[pawn.getX() + 1, pawn.getY()].getType() == 0 && board[pawn.getX() + 1, pawn.getY()].getTeam() != pawn.getTeam() && board[pawn.getX() + 1, pawn.getY()].getPawnDoubleMove())//piece is a pawn, not on the same team, and just moved two spaces
-                        {
-                            return new int[] { pawn.getX() + 1, pawn.getY() - 1 };
-                        }
-                    }
-                }
-            }
-            else if(!pawn.getTeam() && pawn.getY() == 4)//black and on 4
-            {
-                if (tileWithinBoard(pawn.getX() - 1, pawn.getY())) //within the board, tile to left
-                {
-                    if (board[pawn.getX() - 1, pawn.getY()] != null)//there is a piece on the tile
-                    {
-                        if (board[pawn.getX() - 1, pawn.getY()].getType() == 0 && board[pawn.getX() - 1, pawn.getY()].getTeam() != pawn.getTeam() && board[pawn.getX() - 1, pawn.getY()].getPawnDoubleMove())//piece is a pawn, not on the same team, and just moved two spaces
-                        {
-                            return new int[] { pawn.getX() - 1, pawn.getY() + 1 };
-                        }
-                    }
-                }
-                if (tileWithinBoard(pawn.getX() + 1, pawn.getY()))//within the board, tile to right
-                {
-                    if (board[pawn.getX() + 1, pawn.getY()] != null)//there is a piece on the tile
-                    {
-                        if (board[pawn.getX() + 1, pawn.getY()].getType() == 0 && board[pawn.getX() + 1, pawn.getY()].getTeam() != pawn.getTeam() && board[pawn.getX() + 1, pawn.getY()].getPawnDoubleMove())//piece is a pawn, not on the same team, and just moved two spaces
-                        {
-                            return new int[] { pawn.getX() + 1, pawn.getY() + 1 };
-                        }
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        int[] pawnNormalMove(Piece pawn) //pawn moves one space forward
+    //Pawn//
+    int[] pawnStartMove(Piece pawn)//pawn moves two if haven't moved yet
+    {
+        if (!pawn.getMoved()) //pawn has not moved
         {
             if (pawn.getTeam())//white team
             {
-                if (pawn.getY() - 1 >= 0)//still on board
+                if (tileWithinBoard(pawn.getX(), pawn.getY() - 1) && tileWithinBoard(pawn.getX(), pawn.getY() - 2))
                 {
-                    if (somethingOnTile(pawn.getX(), pawn.getY() - 1, false, false)) //if a piece in front
+                    if (somethingOnTile(pawn.getX(), pawn.getY() - 1, false, false))//if there is a piece on the tile infront of it
                     {
                         return null;
                     }
-                    return new int[] { pawn.getX(), pawn.getY() - 1 }; //nothing there
-                }
-                return null;//out of bounds
-            }
-            else//black team
-            {
-                if (pawn.getY() + 1 < 8)//still on board
-                {
-                    if (somethingOnTile(pawn.getX(), pawn.getY() + 1, false, false)) //if a piece in front
+                    else if (somethingOnTile(pawn.getX(), pawn.getY() - 2, false, false)) //there is nothing 2 spots infront
                     {
                         return null;
                     }
-                    return new int[] { pawn.getX(), pawn.getY() + 1 }; //nothing there
+                    return new int[] { pawn.getX(), pawn.getY() - 2 }; //nothing there
                 }
-                return null;//out of bounds
+                return null;
             }
-        }
-
-        public List<int[]> pawnTakePiece(Piece pawn, bool enemyTeam) //pawn move diagonly if there are enemies
-        {
-            List<int[]> possibleMoves = new List<int[]>();
-            if (pawn.getTeam())//white team
+            else//back team
             {
-                if(tileWithinBoard(pawn.getX() - 1, pawn.getY() - 1))//within bounds, left
+                if (tileWithinBoard(pawn.getX(), pawn.getY() + 1) && tileWithinBoard(pawn.getX(), pawn.getY() + 2))
                 {
-                    if (teamOnTile(pawn.getX() - 1, pawn.getY() - 1, !pawn.getTeam()) && enemyTeam) //enemy piece on tile
-                    {           
-                        possibleMoves.Add(new int[] {pawn.getX() - 1, pawn.getY() - 1});
-                    }
-                    else if (teamOnTile(pawn.getX() - 1, pawn.getY() - 1, pawn.getTeam()) && !enemyTeam) //ally piece on tile
+                    if (somethingOnTile(pawn.getX(), pawn.getY() + 1, false, false))//if there is a piece on the tile infront of it
                     {
-                        possibleMoves.Add(new int[] { pawn.getX() - 1, pawn.getY() - 1 });
+                        return null;
                     }
+                    else if (somethingOnTile(pawn.getX(), pawn.getY() + 2, false, false)) //there is nothing 2 spots infront
+                    {
+                        return null;
+                    }
+                    return new int[] { pawn.getX(), pawn.getY() + 2 }; //nothing there or enemy piece
                 }
-                if (tileWithinBoard(pawn.getX() + 1, pawn.getY() - 1))//within bounds, right
-                {
-                    if (teamOnTile(pawn.getX() + 1, pawn.getY() - 1, !pawn.getTeam()) && enemyTeam) //enemy piece on tile
-                    {
-                        possibleMoves.Add(new int[] { pawn.getX() + 1, pawn.getY() - 1 });                    
-                    }
-                    else if (teamOnTile(pawn.getX() + 1, pawn.getY() - 1, pawn.getTeam()) && !enemyTeam) //ally piece on tile
-                    {
-                        possibleMoves.Add(new int[] { pawn.getX() + 1, pawn.getY() - 1 });
-                    }
-                }
+                return null;
             }
-            else//black team
+        }
+        return null;
+    }
+
+    int[] pawnEnPassant(Piece pawn) //pawn special move of en passant
+    {
+        if(pawn.getTeam() && pawn.getY() == 3)//white and on row 3
+        {
+            if (tileWithinBoard(pawn.getX() - 1, pawn.getY())) //within the board, tile to left
             {
-                if (tileWithinBoard(pawn.getX() - 1, pawn.getY() + 1))//within bounds, left
+                if (board[pawn.getX() - 1, pawn.getY()] != null)//there is a piece on the tile
                 {
-                    if (teamOnTile(pawn.getX() - 1, pawn.getY() + 1, !pawn.getTeam()) && enemyTeam) //enemy piece on tile
+                    if(board[pawn.getX() - 1, pawn.getY()].getType() == 0 && board[pawn.getX() - 1, pawn.getY()].getTeam() != pawn.getTeam() && board[pawn.getX() - 1, pawn.getY()].getPawnDoubleMove())//piece is a pawn, not on the same team, and just moved two spaces
                     {
-                        possibleMoves.Add(new int[] { pawn.getX() - 1, pawn.getY() + 1 });                       
+                        return new int[] { pawn.getX() - 1, pawn.getY() - 1 };
                     }
-                    else if (teamOnTile(pawn.getX() - 1, pawn.getY() + 1, pawn.getTeam()) && !enemyTeam) //ally piece on tile
-                    {
-                        possibleMoves.Add(new int[] { pawn.getX() - 1, pawn.getY() + 1 });
-                    }
-                }
-                if (tileWithinBoard(pawn.getX() + 1, pawn.getY() + 1))//within bounds, right
-                {
-                    if (teamOnTile(pawn.getX() + 1, pawn.getY() + 1, !pawn.getTeam()) && enemyTeam) //enemy piece on tile
-                    { 
-                        possibleMoves.Add(new int[] { pawn.getX() + 1, pawn.getY() + 1 });                        
-                    }
-                    else if (teamOnTile(pawn.getX() + 1, pawn.getY() + 1, pawn.getTeam()) && !enemyTeam) //enemy piece on tile
-                    {
-                        possibleMoves.Add(new int[] { pawn.getX() + 1, pawn.getY() + 1 });
-                    }
-
                 }
             }
-            return possibleMoves;
+            if(tileWithinBoard(pawn.getX() + 1, pawn.getY()))//within the board, tile to right
+            {
+                if (board[pawn.getX() + 1, pawn.getY()] != null)//there is a piece on the tile
+                {
+                    if (board[pawn.getX() + 1, pawn.getY()].getType() == 0 && board[pawn.getX() + 1, pawn.getY()].getTeam() != pawn.getTeam() && board[pawn.getX() + 1, pawn.getY()].getPawnDoubleMove())//piece is a pawn, not on the same team, and just moved two spaces
+                    {
+                        return new int[] { pawn.getX() + 1, pawn.getY() - 1 };
+                    }
+                }
+            }
+        }
+        else if(!pawn.getTeam() && pawn.getY() == 4)//black and on 4
+        {
+            if (tileWithinBoard(pawn.getX() - 1, pawn.getY())) //within the board, tile to left
+            {
+                if (board[pawn.getX() - 1, pawn.getY()] != null)//there is a piece on the tile
+                {
+                    if (board[pawn.getX() - 1, pawn.getY()].getType() == 0 && board[pawn.getX() - 1, pawn.getY()].getTeam() != pawn.getTeam() && board[pawn.getX() - 1, pawn.getY()].getPawnDoubleMove())//piece is a pawn, not on the same team, and just moved two spaces
+                    {
+                        return new int[] { pawn.getX() - 1, pawn.getY() + 1 };
+                    }
+                }
+            }
+            if (tileWithinBoard(pawn.getX() + 1, pawn.getY()))//within the board, tile to right
+            {
+                if (board[pawn.getX() + 1, pawn.getY()] != null)//there is a piece on the tile
+                {
+                    if (board[pawn.getX() + 1, pawn.getY()].getType() == 0 && board[pawn.getX() + 1, pawn.getY()].getTeam() != pawn.getTeam() && board[pawn.getX() + 1, pawn.getY()].getPawnDoubleMove())//piece is a pawn, not on the same team, and just moved two spaces
+                    {
+                        return new int[] { pawn.getX() + 1, pawn.getY() + 1 };
+                    }
+                }
+            }
         }
 
-        void pawnPromotion(Piece pawn)
+        return null;
+    }
+
+    int[] pawnNormalMove(Piece pawn) //pawn moves one space forward
+    {
+        if (pawn.getTeam())//white team
         {
-            //Promotion
-           
+            if (pawn.getY() - 1 >= 0)//still on board
+            {
+                if (somethingOnTile(pawn.getX(), pawn.getY() - 1, false, false)) //if a piece in front
+                {
+                    return null;
+                }
+                return new int[] { pawn.getX(), pawn.getY() - 1 }; //nothing there
+            }
+            return null;//out of bounds
         }
-        private void toQueen_Click() //pawn to Queen
+        else//black team
         {
-            selectedPiece.setType(4);
-        //Controls.Remove(fromPawn[0]);
-        //Controls.Remove(fromPawn[1]);
-        //Controls.Remove(fromPawn[2]);
-        //Controls.Remove(fromPawn[3]);
+            if (pawn.getY() + 1 < 8)//still on board
+            {
+                if (somethingOnTile(pawn.getX(), pawn.getY() + 1, false, false)) //if a piece in front
+                {
+                    return null;
+                }
+                return new int[] { pawn.getX(), pawn.getY() + 1 }; //nothing there
+            }
+            return null;//out of bounds
+        }
+    }
+
+    public List<int[]> pawnTakePiece(Piece pawn, bool enemyTeam) //pawn move diagonly if there are enemies
+    {
+        List<int[]> possibleMoves = new List<int[]>();
+        if (pawn.getTeam())//white team
+        {
+            if(tileWithinBoard(pawn.getX() - 1, pawn.getY() - 1))//within bounds, left
+            {
+                if (teamOnTile(pawn.getX() - 1, pawn.getY() - 1, !pawn.getTeam()) && enemyTeam) //enemy piece on tile
+                {           
+                    possibleMoves.Add(new int[] {pawn.getX() - 1, pawn.getY() - 1});
+                }
+                else if (teamOnTile(pawn.getX() - 1, pawn.getY() - 1, pawn.getTeam()) && !enemyTeam) //ally piece on tile
+                {
+                    possibleMoves.Add(new int[] { pawn.getX() - 1, pawn.getY() - 1 });
+                }
+            }
+            if (tileWithinBoard(pawn.getX() + 1, pawn.getY() - 1))//within bounds, right
+            {
+                if (teamOnTile(pawn.getX() + 1, pawn.getY() - 1, !pawn.getTeam()) && enemyTeam) //enemy piece on tile
+                {
+                    possibleMoves.Add(new int[] { pawn.getX() + 1, pawn.getY() - 1 });                    
+                }
+                else if (teamOnTile(pawn.getX() + 1, pawn.getY() - 1, pawn.getTeam()) && !enemyTeam) //ally piece on tile
+                {
+                    possibleMoves.Add(new int[] { pawn.getX() + 1, pawn.getY() - 1 });
+                }
+            }
+        }
+        else//black team
+        {
+            if (tileWithinBoard(pawn.getX() - 1, pawn.getY() + 1))//within bounds, left
+            {
+                if (teamOnTile(pawn.getX() - 1, pawn.getY() + 1, !pawn.getTeam()) && enemyTeam) //enemy piece on tile
+                {
+                    possibleMoves.Add(new int[] { pawn.getX() - 1, pawn.getY() + 1 });                       
+                }
+                else if (teamOnTile(pawn.getX() - 1, pawn.getY() + 1, pawn.getTeam()) && !enemyTeam) //ally piece on tile
+                {
+                    possibleMoves.Add(new int[] { pawn.getX() - 1, pawn.getY() + 1 });
+                }
+            }
+            if (tileWithinBoard(pawn.getX() + 1, pawn.getY() + 1))//within bounds, right
+            {
+                if (teamOnTile(pawn.getX() + 1, pawn.getY() + 1, !pawn.getTeam()) && enemyTeam) //enemy piece on tile
+                { 
+                    possibleMoves.Add(new int[] { pawn.getX() + 1, pawn.getY() + 1 });                        
+                }
+                else if (teamOnTile(pawn.getX() + 1, pawn.getY() + 1, pawn.getTeam()) && !enemyTeam) //enemy piece on tile
+                {
+                    possibleMoves.Add(new int[] { pawn.getX() + 1, pawn.getY() + 1 });
+                }
+
+            }
+        }
+        return possibleMoves;
+    }
+
+    void pawnPromotion() //Pawn Promotion //DONE
+    {
+        if (selectedPiece.getType() == Piece.TYPE_PAWN)//selected piece is a pawn
+        {
+            if ((whoseTurn && selectedPiece.getY() == 0) || (!whoseTurn && selectedPiece.getY() == 7))//team with piece on oppoint
+            {
+                PromotePawn = false;
+                REF_UI_TEXT_PAWN_PROMOTION.gameObject.SetActive(true);
+            }
+        }
+    }
+    public void toQueen_Click() //pawn to Queen //DONE
+    {
+        //selectedPiece.setType(4);
+        changePieceType(selectedPiece, 4);
+        REF_UI_TEXT_PAWN_PROMOTION.gameObject.SetActive(false);
         PromotePawn = true;
-            nextTurn();
-        }
-        private void toRook_Click() //pawn to Rook
-        {
-            selectedPiece.setType(3);
-        //Controls.Remove(fromPawn[0]);
-        //Controls.Remove(fromPawn[1]);
-        //Controls.Remove(fromPawn[2]);
-            //Controls.Remove(fromPawn[3]);
-            PromotePawn = true;
-            nextTurn();
-        }
-        private void toBishop_Click() //pawn to Bishop
-        {
-            selectedPiece.setType(2);
-            //Controls.Remove(fromPawn[0]);
-            //Controls.Remove(fromPawn[1]);
-            //Controls.Remove(fromPawn[2]);
-            //Controls.Remove(fromPawn[3]);
-            PromotePawn = true;
-            nextTurn();
-        }
-        private void toKnight_Click() //pawn to Knight
-        {
-            selectedPiece.setType(1);
-            //Controls.Remove(fromPawn[0]);
-            //Controls.Remove(fromPawn[1]);
-            //Controls.Remove(fromPawn[2]);
-            //Controls.Remove(fromPawn[3]);
-            PromotePawn = true;
-            nextTurn();
-        }
+        nextTurn();
+    }
+    public void toRook_Click() //pawn to Rook //DONE
+    {
+        //selectedPiece.setType(3);
+        changePieceType(selectedPiece, 3);
+        REF_UI_TEXT_PAWN_PROMOTION.gameObject.SetActive(false);
+        PromotePawn = true;
+        nextTurn();
+    }
+    public void toBishop_Click() //pawn to Bishop //DONE
+    {
+        //selectedPiece.setType(2);
+        changePieceType(selectedPiece, 2);
+        REF_UI_TEXT_PAWN_PROMOTION.gameObject.SetActive(false);
+        PromotePawn = true;
+        nextTurn();
+    }
+    public void toKnight_Click() //pawn to Knight //DONE
+    {
+        //selectedPiece.setType(1);
+        changePieceType(selectedPiece, 1);
+        REF_UI_TEXT_PAWN_PROMOTION.gameObject.SetActive(false);
+        PromotePawn = true;
+        nextTurn();
+    }
 
-        public int AI_PawnPromotion(Piece pawn, int xPos, int yPos)//looks at what the best move for AI is when promoting a pawn
+    public int AI_PawnPromotion(Piece pawn, int xPos, int yPos)//looks at what the best move for AI is when promoting a pawn
+    {
+    return 1;
+    }
+
+    //Knight//
+    List<int[]> knightNormalMove(Piece knight) //knight normal movement, L shape
+    {
+        List<int[]> possibleMoves = new List<int[]>();
+        int xx = knight.getX();
+        int yy = knight.getY();
+        if (tileWithinBoard(xx-1,yy-2))//top left
         {
-        return 1;
+            if (!somethingOnTile(xx - 1, yy - 2, true, !knight.getTeam()))//enemy on spot or empty
+            {
+                possibleMoves.Add(new int[] {xx-1,yy-2});
+            }
         }
-
-        //Knight//
-        List<int[]> knightNormalMove(Piece knight) //knight normal movement, L shape
+        if (tileWithinBoard(xx + 1, yy - 2))//top right
         {
-            List<int[]> possibleMoves = new List<int[]>();
-            int xx = knight.getX();
-            int yy = knight.getY();
-            if (tileWithinBoard(xx-1,yy-2))//top left
+            if (!somethingOnTile(xx + 1, yy - 2, true, !knight.getTeam()))//enemy on spot or empty
             {
-                if (!somethingOnTile(xx - 1, yy - 2, true, !knight.getTeam()))//enemy on spot or empty
-                {
-                    possibleMoves.Add(new int[] {xx-1,yy-2});
-                }
+                possibleMoves.Add(new int[] { xx + 1, yy - 2 });
             }
-            if (tileWithinBoard(xx + 1, yy - 2))//top right
-            {
-                if (!somethingOnTile(xx + 1, yy - 2, true, !knight.getTeam()))//enemy on spot or empty
-                {
-                    possibleMoves.Add(new int[] { xx + 1, yy - 2 });
-                }
-            }
-
-            if (tileWithinBoard(xx + 2, yy - 1))//right up
-            {
-                if (!somethingOnTile(xx + 2, yy - 1, true, !knight.getTeam()))//enemy on spot or empty
-                {
-                    possibleMoves.Add(new int[] { xx + 2, yy - 1 });
-                }
-            }
-            if (tileWithinBoard(xx + 2, yy + 1))//right bottom
-            {
-                if (!somethingOnTile(xx + 2, yy + 1, true, !knight.getTeam()))//enemy on spot or empty
-                {
-                    possibleMoves.Add(new int[] { xx + 2, yy + 1 });
-                }
-            }
-
-            if (tileWithinBoard(xx - 1, yy + 2))//down left
-            {
-                if (!somethingOnTile(xx - 1, yy + 2, true, !knight.getTeam()))//enemy on spot or empty
-                {
-                    possibleMoves.Add(new int[] { xx - 1, yy + 2 });
-                }
-            }
-            if (tileWithinBoard(xx + 1, yy + 2))//down right
-            {
-                if (!somethingOnTile(xx + 1, yy + 2, true, !knight.getTeam()))//enemy on spot or empty
-                {
-                    possibleMoves.Add(new int[] { xx + 1, yy + 2 });
-                }
-            }
-
-            if (tileWithinBoard(xx - 2, yy - 1))//left up
-            {
-                if (!somethingOnTile(xx - 2, yy - 1, true, !knight.getTeam()))//enemy on spot or empty
-                {
-                    possibleMoves.Add(new int[] { xx - 2, yy - 1 });
-                }
-            }
-            if (tileWithinBoard(xx - 2, yy + 1))//left bottom
-            {
-                if (!somethingOnTile(xx - 2, yy + 1, true, !knight.getTeam()))//enemy on spot or empty
-                {
-                    possibleMoves.Add(new int[] { xx - 2, yy + 1 });
-                }
-            }
-            return possibleMoves;
         }
 
-        //Bishop//
-        List<int[]> bishopNormalMove(Piece bishop) //bishop normal movement, diagonal
+        if (tileWithinBoard(xx + 2, yy - 1))//right up
         {
-            List<int[]> possibleMoves = new List<int[]>();
-            possibleMoves.AddRange(spotsInDirection(bishop, -1, -1));
-            possibleMoves.AddRange(spotsInDirection(bishop, -1,  1));
-            possibleMoves.AddRange(spotsInDirection(bishop,  1, -1));
-            possibleMoves.AddRange(spotsInDirection(bishop,  1,  1));
-            return possibleMoves;
-        }
-
-        //Rook//
-        List<int[]> rookNormalMove(Piece rook) //rook normal movement, left, right, up, down
-        {
-            List<int[]> possibleMoves = new List<int[]>();
-            possibleMoves.AddRange(spotsInDirection(rook, -1, 0));
-            possibleMoves.AddRange(spotsInDirection(rook,  1, 0));
-            possibleMoves.AddRange(spotsInDirection(rook,  0,-1));
-            possibleMoves.AddRange(spotsInDirection(rook,  0, 1));
-            return possibleMoves;
-        }
-
-
-        List<int[]> spotsInDirection(Piece piece, int xDir, int yDir)
-        {
-            List<int[]> possibleMoves = new List<int[]>();
-            int xx = piece.getX();
-            int yy = piece.getY();
-            for(int i = 1; true; i++)
+            if (!somethingOnTile(xx + 2, yy - 1, true, !knight.getTeam()))//enemy on spot or empty
             {
-            if (tileWithinBoard(xx + (xDir * i), yy + (yDir * i)))
+                possibleMoves.Add(new int[] { xx + 2, yy - 1 });
+            }
+        }
+        if (tileWithinBoard(xx + 2, yy + 1))//right bottom
+        {
+            if (!somethingOnTile(xx + 2, yy + 1, true, !knight.getTeam()))//enemy on spot or empty
+            {
+                possibleMoves.Add(new int[] { xx + 2, yy + 1 });
+            }
+        }
+
+        if (tileWithinBoard(xx - 1, yy + 2))//down left
+        {
+            if (!somethingOnTile(xx - 1, yy + 2, true, !knight.getTeam()))//enemy on spot or empty
+            {
+                possibleMoves.Add(new int[] { xx - 1, yy + 2 });
+            }
+        }
+        if (tileWithinBoard(xx + 1, yy + 2))//down right
+        {
+            if (!somethingOnTile(xx + 1, yy + 2, true, !knight.getTeam()))//enemy on spot or empty
+            {
+                possibleMoves.Add(new int[] { xx + 1, yy + 2 });
+            }
+        }
+
+        if (tileWithinBoard(xx - 2, yy - 1))//left up
+        {
+            if (!somethingOnTile(xx - 2, yy - 1, true, !knight.getTeam()))//enemy on spot or empty
+            {
+                possibleMoves.Add(new int[] { xx - 2, yy - 1 });
+            }
+        }
+        if (tileWithinBoard(xx - 2, yy + 1))//left bottom
+        {
+            if (!somethingOnTile(xx - 2, yy + 1, true, !knight.getTeam()))//enemy on spot or empty
+            {
+                possibleMoves.Add(new int[] { xx - 2, yy + 1 });
+            }
+        }
+        return possibleMoves;
+    }
+
+    //Bishop//
+    List<int[]> bishopNormalMove(Piece bishop) //bishop normal movement, diagonal
+    {
+        List<int[]> possibleMoves = new List<int[]>();
+        possibleMoves.AddRange(spotsInDirection(bishop, -1, -1));
+        possibleMoves.AddRange(spotsInDirection(bishop, -1,  1));
+        possibleMoves.AddRange(spotsInDirection(bishop,  1, -1));
+        possibleMoves.AddRange(spotsInDirection(bishop,  1,  1));
+        return possibleMoves;
+    }
+
+    //Rook//
+    List<int[]> rookNormalMove(Piece rook) //rook normal movement, left, right, up, down
+    {
+        List<int[]> possibleMoves = new List<int[]>();
+        possibleMoves.AddRange(spotsInDirection(rook, -1, 0));
+        possibleMoves.AddRange(spotsInDirection(rook,  1, 0));
+        possibleMoves.AddRange(spotsInDirection(rook,  0,-1));
+        possibleMoves.AddRange(spotsInDirection(rook,  0, 1));
+        return possibleMoves;
+    }
+
+
+    List<int[]> spotsInDirection(Piece piece, int xDir, int yDir)
+    {
+        List<int[]> possibleMoves = new List<int[]>();
+        int xx = piece.getX();
+        int yy = piece.getY();
+        for(int i = 1; true; i++)
+        {
+        if (tileWithinBoard(xx + (xDir * i), yy + (yDir * i)))
+            {
+                if (!somethingOnTile(xx + (xDir * i), yy + (yDir * i), true, !piece.getTeam())) //tile is empty or has the opposite team on it
                 {
-                    if (!somethingOnTile(xx + (xDir * i), yy + (yDir * i), true, !piece.getTeam())) //tile is empty or has the opposite team on it
-                    {
-                        possibleMoves.Add(new int[] { xx + (xDir * i), yy + (yDir * i) });
-                        if (teamOnTile(xx + (xDir * i), yy + (yDir * i), !piece.getTeam()))// if it is an enemy
-                        {
-                            break;
-                        }
-                    }
-                    else//has the same team piece on it
+                    possibleMoves.Add(new int[] { xx + (xDir * i), yy + (yDir * i) });
+                    if (teamOnTile(xx + (xDir * i), yy + (yDir * i), !piece.getTeam()))// if it is an enemy
                     {
                         break;
                     }
                 }
-                else //not inbounds
+                else//has the same team piece on it
                 {
                     break;
                 }
             }
-            return possibleMoves;
+            else //not inbounds
+            {
+                break;
+            }
         }
-        //Queen//
-        List<int[]> queenNormalMove(Piece queen) //queen normal movement, left, right, up, down, diagonal
-        {
-            List<int[]> possibleMoves = new List<int[]>();
-            possibleMoves.AddRange(bishopNormalMove(queen));
-            possibleMoves.AddRange(rookNormalMove(queen));
-            return possibleMoves;
-        }
+        return possibleMoves;
+    }
+    //Queen//
+    List<int[]> queenNormalMove(Piece queen) //queen normal movement, left, right, up, down, diagonal
+    {
+        List<int[]> possibleMoves = new List<int[]>();
+        possibleMoves.AddRange(bishopNormalMove(queen));
+        possibleMoves.AddRange(rookNormalMove(queen));
+        return possibleMoves;
+    }
 
-        //King//
-        List<int[]> kingCastling(Piece king)//a king castling
+    //King//
+    List<int[]> kingCastling(Piece king)//a king castling
+    {
+        List<int[]> possibleMoves = new List<int[]>();
+        if (!check && !king.getMoved())//if the king is not checked and the king hasn't moved
         {
-            List<int[]> possibleMoves = new List<int[]>();
-            if (!check && !king.getMoved())//if the king is not checked and the king hasn't moved
+            if (board[0, king.getY()] != null)//left rook
             {
-                if (board[0, king.getY()] != null)//left rook
+                if(board[0, king.getY()].getType() == 3 && !board[0, king.getY()].getMoved())//piece is a rook and hasn't moved
                 {
-                    if(board[0, king.getY()].getType() == 3 && !board[0, king.getY()].getMoved())//piece is a rook and hasn't moved
-                    {
-                        if(board[1, king.getY()] == null && board[2, king.getY()] == null && board[3, king.getY()] == null){ //spots are open
-                            possibleMoves.Add(new int[] { 2, king.getY() });
-                        }
-                    }
-                }
-                if (board[7, king.getY()] != null)//right rook
-                {
-                    if (board[7, king.getY()].getType() == 3 && !board[7, king.getY()].getMoved())//piece is a rook and hasn't moved
-                    {
-                        if (board[5, king.getY()] == null && board[6, king.getY()] == null)
-                        { //spots are open
-                            possibleMoves.Add(new int[] { 6, king.getY() });
-                        }
+                    if(board[1, king.getY()] == null && board[2, king.getY()] == null && board[3, king.getY()] == null){ //spots are open
+                        possibleMoves.Add(new int[] { 2, king.getY() });
                     }
                 }
             }
-            return possibleMoves;
+            if (board[7, king.getY()] != null)//right rook
+            {
+                if (board[7, king.getY()].getType() == 3 && !board[7, king.getY()].getMoved())//piece is a rook and hasn't moved
+                {
+                    if (board[5, king.getY()] == null && board[6, king.getY()] == null)
+                    { //spots are open
+                        possibleMoves.Add(new int[] { 6, king.getY() });
+                    }
+                }
+            }
         }
+        return possibleMoves;
+    }
 
-        List<int[]> kingNormalMove(Piece king) //move in any direction one tile
+    List<int[]> kingNormalMove(Piece king) //move in any direction one tile
+    {
+        List<int[]> startMoves = new List<int[]>();
+        int kX = king.getX();
+        int kY = king.getY();
+        int[,] spots = new int[,] { {-1,-1}, {-1,0}, {-1, 1}, {0, -1}, {0, 1} , {1, -1}, {1, 0}, {1, 1} }; //spots around the king
+        for (int i = 0; i < spots.GetLength(0); i++)
         {
-            List<int[]> startMoves = new List<int[]>();
-            int kX = king.getX();
-            int kY = king.getY();
-            int[,] spots = new int[,] { {-1,-1}, {-1,0}, {-1, 1}, {0, -1}, {0, 1} , {1, -1}, {1, 0}, {1, 1} }; //spots around the king
-            for (int i = 0; i < spots.GetLength(0); i++)
+            int xx = kX + spots[i, 0];//x offset
+            int yy = kY + spots[i, 1];//y offset
+            if (tileWithinBoard(xx, yy))//within the board
             {
-                int xx = kX + spots[i, 0];//x offset
-                int yy = kY + spots[i, 1];//y offset
-                if (tileWithinBoard(xx, yy))//within the board
+                if (!somethingOnTile(xx, yy, true, !king.getTeam()))
                 {
-                    if (!somethingOnTile(xx, yy, true, !king.getTeam()))
-                    {
-                        startMoves.Add(new int[] {xx, yy});
-                    }
+                    startMoves.Add(new int[] {xx, yy});
                 }
             }
-            List<int[]> enemyMoves = getPossibleMovesForTeam(!king.getTeam(), true);
-            for (int i = 0; i < enemyMoves.Count; i++)//get rid of tiles that are too far away to matter
+        }
+        List<int[]> enemyMoves = getPossibleMovesForTeam(!king.getTeam(), true);
+        for (int i = 0; i < enemyMoves.Count; i++)//get rid of tiles that are too far away to matter
+        {
+            int[] spot = enemyMoves[i];
+            if (spot == null)
             {
-                int[] spot = enemyMoves[i];
-                if (spot == null)
-                {
-                    enemyMoves.RemoveAt(i);
-                    i--;
-                }
-                else if (spot[0] < king.getX() - 1 || spot[0] > king.getX() + 1 || spot[1] < king.getY() - 1 || spot[1] > king.getY() + 1)
-                {
-                    enemyMoves.RemoveAt(i);
-                    i--;
-                }
+                enemyMoves.RemoveAt(i);
+                i--;
             }
+            else if (spot[0] < king.getX() - 1 || spot[0] > king.getX() + 1 || spot[1] < king.getY() - 1 || spot[1] > king.getY() + 1)
+            {
+                enemyMoves.RemoveAt(i);
+                i--;
+            }
+        }
             
             
-            foreach (int[] enemySpot in enemyMoves)
+        foreach (int[] enemySpot in enemyMoves)
+        {
+            for (int i = 0; i < startMoves.Count;i++)
             {
-                for (int i = 0; i < startMoves.Count;i++)
+                int[] spot = startMoves[i];
+                if (spot[0] == enemySpot[0] && spot[1] == enemySpot[1])//does not contain spot
                 {
-                    int[] spot = startMoves[i];
-                    if (spot[0] == enemySpot[0] && spot[1] == enemySpot[1])//does not contain spot
-                    {
-                        startMoves.Remove(spot);
-                        i--;
-                    }
+                    startMoves.Remove(spot);
+                    i--;
                 }
             }
-            return startMoves;
         }
+        return startMoves;
+    }
 
-        public List<int[]> getPossibleMovesForTeam(bool team, bool withKing) //gets all the possible moves a team  could make, with all square around their king //true = white, false = black
+    public List<int[]> getPossibleMovesForTeam(bool team, bool withKing) //gets all the possible moves a team  could make, with all square around their king //true = white, false = black
+    {
+        List<int[]> possibleMoves = new List<int[]>();
+        for(int i = 0; i < 8; i++)//x
         {
-            List<int[]> possibleMoves = new List<int[]>();
-            for(int i = 0; i < 8; i++)//x
+            for(int j = 0; j < 8; j++)//y
             {
-                for(int j = 0; j < 8; j++)//y
+                if (board[i, j] != null)//piece on it
                 {
-                    if (board[i, j] != null)//piece on it
+                    if(board[i,j].getTeam() == team)//same team that is wanted
                     {
-                        if(board[i,j].getTeam() == team)//same team that is wanted
+                        if(board[i,j].getType() == Piece.TYPE_KING)//king
                         {
-                            if(board[i,j].getType() == Piece.TYPE_KING)//king
+                            if (withKing)//want to get spots for the king to move
                             {
-                                if (withKing)//want to get spots for the king to move
+                                int[,] spots = new int[,] { { -1, -1 }, { -1, 0 }, { -1, 1 }, { 0, -1 }, { 0, 1 }, { 1, -1 }, { 1, 0 }, { 1, 1 } }; //spots around the king
+                                for (int k = 0; k < spots.GetLength(0); k++)
                                 {
-                                    int[,] spots = new int[,] { { -1, -1 }, { -1, 0 }, { -1, 1 }, { 0, -1 }, { 0, 1 }, { 1, -1 }, { 1, 0 }, { 1, 1 } }; //spots around the king
-                                    for (int k = 0; k < spots.GetLength(0); k++)
-                                    {
-                                        possibleMoves.Add(new int[] { i + spots[k, 0], j + spots[k, 1] });
-                                    }
+                                    possibleMoves.Add(new int[] { i + spots[k, 0], j + spots[k, 1] });
                                 }
                             }
-                            else if (board[i, j].getType() == Piece.TYPE_PAWN)//pawn
-                            {
-                                possibleMoves.AddRange(pawnTakePiece(board[i, j], true));
-                            }
-                            else//another piece
-                            {
-                                possibleMoves.AddRange(getPossibleMoves(board[i, j]));
-                            }
+                        }
+                        else if (board[i, j].getType() == Piece.TYPE_PAWN)//pawn
+                        {
+                            possibleMoves.AddRange(pawnTakePiece(board[i, j], true));
+                        }
+                        else//another piece
+                        {
+                            possibleMoves.AddRange(getPossibleMoves(board[i, j]));
                         }
                     }
                 }
             }
-            return possibleMoves;
         }
+        return possibleMoves;
+    }
 
 }

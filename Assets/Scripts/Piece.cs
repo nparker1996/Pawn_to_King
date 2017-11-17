@@ -51,7 +51,6 @@ public class Piece : MonoBehaviour {
         pawnDoubleMove = false;
         moveCount = 0;
         moves = new List<int[]>();
-        //determineImage();
     }
 
     public Piece(int X, int Y, bool Team, int Type) //contructor
@@ -65,7 +64,6 @@ public class Piece : MonoBehaviour {
         pawnDoubleMove = false;
         moveCount = 0;
         moves = new List<int[]>();
-        //determineImage();
     }
 
     //Getters and Setters
@@ -152,6 +150,11 @@ public class Piece : MonoBehaviour {
     public int getMoveCount()
     {
         return moveCount;
+    }
+
+    public void setMoveCount(int newMoveCount)
+    {
+        moveCount = newMoveCount;
     }
 
     public void addMoveCount(int num)
