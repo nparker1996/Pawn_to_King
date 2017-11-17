@@ -109,31 +109,30 @@ public class Game : MonoBehaviour
         stalemate = false;
         turnCount = 0;
         resetBoard();
-        makeBoard();
         updateText(true);
     }
 
-    private void setAgent(GameObject team, string inputType) //sets the type of Agent for each AI
+    private void setAgent(GameObject team, string inputType) //sets the type of Agent for each AI //DONE
     {
         switch (inputType)
         {
             case "Optimal Decision":
-
+                team.AddComponent<OD_AI>();
                 break;
             case "Maximin":
                 team.AddComponent<Maximin_AI>();
                 break;
             case "Random":
-
+                team.AddComponent<Random_AI>();
                 break;
             case "Neural Network":
-
+                team.AddComponent<Neural_Network_AI>();
                 break;
             case "Three Stage":
-
+                team.AddComponent<Three_Stage_AI>();
                 break;
             case "Variable":
-
+                team.AddComponent<Variable_Modifier_AI>();
                 break;
             case "Human":
             default:
@@ -286,9 +285,12 @@ public class Game : MonoBehaviour
         }
     }
 
-    private void RemoveSelected() //removes the selectedPiece to clear the board
+    public void removeSelected() //removes the selectedPiece to clear the board //DONE
     {
-
+        Debug.Log("Remove");
+        selectedPiece = null;
+        foreach (GameObject overlay in listOfOverlays) { Destroy(overlay); }//destroys each overlay current
+        listOfOverlays.Clear();//clears list
     }
 
     public void resetGame() //for neural network and variable modification AI //DONE
@@ -300,7 +302,6 @@ public class Game : MonoBehaviour
         stalemate = false;
         turnCount = 0;
         resetBoard();
-        makeBoard();
         updateText(true);
     }
 
@@ -408,11 +409,6 @@ public class Game : MonoBehaviour
             blackTeam.pieces.Add(board[x, y]); //adds piece to team
         }
         board[x, y].setLocation(x, y); //set location on board of the piece
-    }
-
-    void makeBoard() //does final touches to pieces' PictureBox///MIGHT NOT NEED
-    {
-
     }
 
     void nextTurn()//moves to the next turn //DONE
