@@ -17,6 +17,10 @@ public class Random_AI : Agent
 
     // Update is called once per frame
     void Update () {
+        
+    }
+
+    public override void turn() {
         List<Piece> listOfPieces = new List<Piece>();
         List<int[]> listOfMoves = new List<int[]>();
         foreach (Piece p in pieces)//puts all moves into List to pick from
@@ -37,7 +41,7 @@ public class Random_AI : Agent
         if (listOfPieces.Count > 0)
         {
             int r = new System.Random().Next(listOfPieces.Count);
-            //Console.WriteLine(" (" + listOfPieces[r].getX() + ", " + listOfPieces[r].getY() + ") at" + " (" + listOfMoves[r][0] + ", " + listOfMoves[r][1] + ")");
+            //Debug.Log(" (" + listOfPieces[r].getX() + ", " + listOfPieces[r].getY() + ") at" + " (" + listOfMoves[r][0] + ", " + listOfMoves[r][1] + ")");
             game.clickedPieceAI(listOfPieces[r], listOfMoves[r][0], listOfMoves[r][1]);
         }
         else
@@ -48,6 +52,4 @@ public class Random_AI : Agent
             return;
         }
     }
-
-    public override void turn() { }
 }

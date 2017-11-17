@@ -115,6 +115,21 @@ public class Game : MonoBehaviour
         updateText(true);
     }
 
+    //public void neededCopy(out Game newGame) //copies nessary parts of current game to new game to test 
+    //{
+    //    newGame = new Game();
+    //    newGame.whiteTeam = whiteTeam;
+    //    newGame.blackTeam = blackTeam;
+    //    newGame.board = board;
+    //    newGame.selectedPiece = selectedPiece;
+    //    newGame.whoseTurn = whoseTurn;
+    //    newGame.check = check;
+    //    newGame.checkmate = checkmate;
+    //    newGame.stalemate = stalemate;
+    //    newGame.turnCount = turnCount;
+    //    newGame.PromotePawn = PromotePawn;
+    //}
+
     private void setAgent(GameObject team, string inputType) //sets the type of Agent for each AI //DONE
     {
         switch (inputType)
@@ -1112,9 +1127,32 @@ public class Game : MonoBehaviour
         nextTurn();
     }
 
-    public int AI_PawnPromotion(Piece pawn, int xPos, int yPos)//looks at what the best move for AI is when promoting a pawn
+    public int AI_PawnPromotion(Piece pawn, int xPos, int yPos)//looks at what the best move for AI is when promoting a pawn //DONE
     {
-    return 1;
+        Piece[,] temptBoard = new Piece[8, 8];
+        System.Array.Copy(board, temptBoard, 64); //copies board to test
+        temptBoard[xPos, yPos] = temptBoard[pawn.getX(), pawn.getY()]; //moves piece within temptBoard
+        temptBoard[pawn.getX(), pawn.getY()] = null;
+
+        temptBoard[xPos, yPos].setType(Piece.TYPE_KNIGHT);//test to see what would happen if it is a knight
+        if (checkForChecks(!temptBoard[xPos, yPos].getTeam(), temptBoard[xPos, yPos])) //If it cause a check
+        {
+            if (checkForCheckmates(!temptBoard[xPos, yPos].getTeam()))
+            { //and cause a checkmate, then pick knight
+                return Piece.TYPE_KNIGHT;
+            }
+        }
+
+        for (int t = 4; t >= 2; t--)
+        {
+
+            temptBoard[xPos, yPos].setType(t);//test to see what would happen if it was a queen, bishop, or rook
+            if (!checkForStalemates(!temptBoard[xPos, yPos].getTeam())) //if a stalemate does not occur, then become selected type
+            {
+                return t;
+            }
+        }
+        return Piece.TYPE_KNIGHT;//if all else fails, become a knight
     }
 
     //Knight//
