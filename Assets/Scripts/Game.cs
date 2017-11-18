@@ -674,6 +674,7 @@ public class Game : MonoBehaviour
 
     public bool checkForChecks(bool teamBeingChecked, Piece pieceChecking, Piece[,] theBoard)//checks for a check //DONE
     {
+        if(pieceChecking == null) { return false; }
         Piece king;
         if (teamBeingChecked)//white team
         {
