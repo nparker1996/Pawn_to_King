@@ -283,7 +283,7 @@ public class OD_AI : Agent {
         {
             count = 1;
         }
-        //Console.WriteLine((total / count) + " : " + total + " / " + count +  " : " + " (" + p.getX() + ", " + p.getY() + ", " +p.getType() + ") -->" + " (" + tile[0] + ", " + tile[1] + ") ");
+        //Debug.Log((total / count) + " : " + total + " / " + count +  " : " + " (" + p.getX() + ", " + p.getY() + ", " +p.getType() + ") -->" + " (" + tile[0] + ", " + tile[1] + ") ");
         p.setLocation(oldX, oldY, false);
         return (total / count) + (p.getMoveCount() * MOD_EM_MOVE_COUNT);
     }
