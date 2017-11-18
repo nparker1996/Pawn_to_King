@@ -174,8 +174,8 @@ public class Game : MonoBehaviour
                     List<int[]> moves = new List<int[]>();
                     if (selectedPiece.getMoves().Count == 0)//has not calculated possible spots
                     {
-                        moves = getPossibleMoves(board[xx, yy]);
-                        moves = willMakeCheck(board[xx, yy], moves);// checks to see if piece moves to a spot will it chose a check?
+                        moves = getPossibleMoves(board[xx, yy], board);
+                        moves = willMakeCheck(board[xx, yy], moves, board);// checks to see if piece moves to a spot will it chose a check?
                         selectedPiece.getMoves().AddRange(moves);
                     }
                     else//has already calculated possible spots
@@ -186,7 +186,7 @@ public class Game : MonoBehaviour
                     {
                         if (tile != null) //Tile exists
                         {
-                            if (teamOnTile(tile[0], tile[1], !selectedPiece.getTeam())) //enemy on tile
+                            if (teamOnTile(tile[0], tile[1], !selectedPiece.getTeam(), board)) //enemy on tile
                             {
                                 GameObject box = Instantiate(REF_ENEMY_OVERLAY);
                                 box.GetComponent<Overlay>().setLocation(tile[0], tile[1]);
@@ -218,11 +218,11 @@ public class Game : MonoBehaviour
         {
             if (xx == 2)//left
             {
-                movePieceToTile(board[0, yy], 3, yy); //move left rook to proper location
+                movePieceToTile(board[0, yy], 3, yy, board); //move left rook to proper location
             }
             else if (xx == 6)//right
             {
-                movePieceToTile(board[7, yy], 5, yy); //move right rook to proper location
+                movePieceToTile(board[7, yy], 5, yy, board); //move right rook to proper location
             }
         }
 
@@ -256,7 +256,7 @@ public class Game : MonoBehaviour
             }
         }
 
-        movePieceToTile(selectedPiece, xx, yy);//moves the piece
+        movePieceToTile(selectedPiece, xx, yy, board);//moves the piece
 
         pawnPromotion();
 
@@ -284,21 +284,21 @@ public class Game : MonoBehaviour
             {
                 if (xx == 2)//left
                 {
-                    movePieceToTile(board[0, yy], 3, yy);
+                    movePieceToTile(board[0, yy], 3, yy, board);
                 }
                 else if (xx == 6)//right
                 {
-                    movePieceToTile(board[7, yy], 5, yy);
+                    movePieceToTile(board[7, yy], 5, yy, board);
                 }
             }
 
             //pawn promoting
             if (selectedPiece.getType() == Piece.TYPE_PAWN && ((yy == 0 && selectedPiece.getTeam()) || (yy == 7 && !selectedPiece.getTeam())))
             {
-                selectedPiece.setType(AI_PawnPromotion(selectedPiece, xx, yy));
+                selectedPiece.setType(AI_PawnPromotion(selectedPiece, xx, yy, board));
             }
 
-            movePieceToTile(selectedPiece, xx, yy);//moves the piece
+            movePieceToTile(selectedPiece, xx, yy, board);//moves the piece
             nextTurn();
         }
     }
@@ -435,12 +435,12 @@ public class Game : MonoBehaviour
         //checks for checks, checkmates, and stalemates
         bool checkCheck = false; //checks everything for a check, it's annoy, I know
 
-        List<Piece> pOT = getTeamPieces(whoseTurn);
+        List<Piece> pOT = getTeamPieces(whoseTurn, board);
         foreach (Piece p in pOT)
         {
             if (p == selectedPiece || p.getType() == Piece.TYPE_BISHOP || p.getType() == Piece.TYPE_ROOK || p.getType() == Piece.TYPE_QUEEN)//piece is the one that was moved, or due to the move, another piece could check the king
             {
-                if (checkForChecks(!whoseTurn, p)) //check for checks
+                if (checkForChecks(!whoseTurn, p, board)) //check for checks
                 {
                     checkCheck = true;
                     break;
@@ -451,7 +451,7 @@ public class Game : MonoBehaviour
         if (checkCheck) //check for checks
         {
             check = true;
-            if (checkForCheckmates(!whoseTurn))//check for checkmates
+            if (checkForCheckmates(!whoseTurn, board))//check for checkmates
             {
                 checkmate = true;
             }
@@ -459,7 +459,7 @@ public class Game : MonoBehaviour
         else//not a check
         {
             check = false;
-            if (checkForStalemates(!whoseTurn))//check for stalemates
+            if (checkForStalemates(!whoseTurn, board))//check for stalemates
             {
                 stalemate = true;
             }
@@ -472,7 +472,7 @@ public class Game : MonoBehaviour
         }
 
         //clears the piece of possible moves
-        foreach (Piece piece in getTeamPieces(whoseTurn))
+        foreach (Piece piece in getTeamPieces(whoseTurn, board))
         {
             piece.getMoves().Clear();
             if (piece.getPawnDoubleMove())
@@ -521,32 +521,32 @@ public class Game : MonoBehaviour
         }
     }
 
-    public List<int[]> getPossibleMoves(Piece piece)  //get locations piece can move, //DONE
+    public List<int[]> getPossibleMoves(Piece piece, Piece[,] theBoard)  //get locations piece can move, //DONE
     {
         List<int[]> possibleMoves = new List<int[]>(); //of possible moves piece can make
         switch (piece.getType())
         {
             case Piece.TYPE_PAWN: //pawn
-                possibleMoves.Add(pawnStartMove(piece));
-                possibleMoves.Add(pawnNormalMove(piece));
-                possibleMoves.AddRange(pawnTakePiece(piece, true));
-                possibleMoves.Add(pawnEnPassant(piece));
+                possibleMoves.Add(pawnStartMove(piece, theBoard));
+                possibleMoves.Add(pawnNormalMove(piece, theBoard));
+                possibleMoves.AddRange(pawnTakePiece(piece, true, theBoard));
+                possibleMoves.Add(pawnEnPassant(piece, theBoard));
                 break;
             case Piece.TYPE_KNIGHT: //knight
-                possibleMoves.AddRange(knightNormalMove(piece));
+                possibleMoves.AddRange(knightNormalMove(piece, theBoard));
                 break;
             case Piece.TYPE_BISHOP: //bishop
-                possibleMoves.AddRange(bishopNormalMove(piece));
+                possibleMoves.AddRange(bishopNormalMove(piece, theBoard));
                 break;
             case Piece.TYPE_ROOK: //rook
-                possibleMoves.AddRange(rookNormalMove(piece));
+                possibleMoves.AddRange(rookNormalMove(piece, theBoard));
                 break;
             case Piece.TYPE_QUEEN: //queen
-                possibleMoves.AddRange(queenNormalMove(piece));
+                possibleMoves.AddRange(queenNormalMove(piece, theBoard));
                 break;
             case Piece.TYPE_KING: //king
-                possibleMoves.AddRange(kingCastling(piece));
-                possibleMoves.AddRange(kingNormalMove(piece));
+                possibleMoves.AddRange(kingCastling(piece, theBoard));
+                possibleMoves.AddRange(kingNormalMove(piece, theBoard));
                 break;
             default:
                 break;
@@ -562,13 +562,13 @@ public class Game : MonoBehaviour
         return possibleMoves;
     }
 
-    public bool somethingOnTile(int x, int y, bool sameTeamOnly, bool team) //checks to see if a piece is on a tile, if sameTeam is true then also if enemy piece is there //DONE
+    public bool somethingOnTile(int x, int y, bool sameTeamOnly, bool team, Piece[,] theBoard) //checks to see if a piece is on a tile, if sameTeam is true then also if enemy piece is there //DONE
     {
-        if (board[x, y] != null)//something on the spot
+        if (theBoard[x, y] != null)//something on the spot
         {
             if (sameTeamOnly)//team matters
             {
-                if (board[x, y].getTeam() == team) //the other team's piece
+                if (theBoard[x, y].getTeam() == team) //the other team's piece
                 {
                     return false;//can move there
                 }
@@ -579,11 +579,11 @@ public class Game : MonoBehaviour
         return false;//can move there
     }
 
-    private bool teamOnTile(int x, int y, bool team)//checks to see if a team is on a tile //DONE
+    private bool teamOnTile(int x, int y, bool team, Piece[,] theBoard)//checks to see if a team is on a tile //DONE
     {
-        if (board[x, y] != null)
+        if (theBoard[x, y] != null)
         {
-            if (board[x, y].getTeam() == team)
+            if (theBoard[x, y].getTeam() == team)
             {
                 return true;
             }
@@ -591,26 +591,26 @@ public class Game : MonoBehaviour
         return false;
     }
 
-    void movePieceToTile(Piece piece, int X, int Y) //moves a piece to a tile //DONE
+    void movePieceToTile(Piece piece, int X, int Y, Piece[,] theBoard) //moves a piece to a tile //DONE
     {
         if (!piece.getMoved()) //piece has not moved
         {
             piece.setMoved();
         }
-        if (teamOnTile(X, Y, !piece.getTeam()))//moving to a tile with an enemy on it
+        if (teamOnTile(X, Y, !piece.getTeam(), theBoard))//moving to a tile with an enemy on it
         {
-            if (board[X, Y].getTeam())//white Team
+            if (theBoard[X, Y].getTeam())//white Team
             {
-                blackTeam.points += board[X, Y].getValue();
+                blackTeam.points += theBoard[X, Y].getValue();
             }
             else//black team
             {
-                whiteTeam.points += board[X, Y].getValue();
+                whiteTeam.points += theBoard[X, Y].getValue();
             }
-            deletePiece(board[X, Y]); //piece is deleted
+            deletePiece(theBoard[X, Y]); //piece is deleted
         }
-        board[piece.getX(), piece.getY()] = null; //removes piece from previous location
-        board[X, Y] = piece; //puts piece on new tile
+        theBoard[piece.getX(), piece.getY()] = null; //removes piece from previous location
+        theBoard[X, Y] = piece; //puts piece on new tile
         piece.setLocation(X, Y);
         piece.addMoveCount(1);
     }
@@ -624,7 +624,7 @@ public class Game : MonoBehaviour
         return true;
     }
 
-    public List<int[]> willMakeCheck(Piece piece, List<int[]> tiles) // checks to see if the piece moves, will it make a check?//DONE
+    public List<int[]> willMakeCheck(Piece piece, List<int[]> tiles, Piece[,] theBoard) // checks to see if the piece moves, will it make a check?//DONE
     {
 
         //tiles are the spots that piece will move to
@@ -633,7 +633,7 @@ public class Game : MonoBehaviour
             return tiles;
         }
         Piece[,] temptBoard = new Piece[8, 8];
-        System.Array.Copy(board, temptBoard, 64); //copies board to tempBoard
+        System.Array.Copy(theBoard, temptBoard, 64); //copies board to tempBoard
         List<int[]> canMove = new List<int[]>(); //spots that can be moved to that will not cause a check
         canMove.AddRange(tiles);
         foreach (int[] tile in tiles)
@@ -641,18 +641,18 @@ public class Game : MonoBehaviour
             //sets location in temptBoard, but does not change anything in the actual board
             temptBoard[piece.getX(), piece.getY()] = null;
             temptBoard[tile[0], tile[1]] = piece;
-            List<Piece> enemyPieces = getTeamPieces(!piece.getTeam());//gets all piece of enemy team
+            List<Piece> enemyPieces = getTeamPieces(!piece.getTeam(), temptBoard);//gets all piece of enemy team
             foreach(Piece eP in enemyPieces)
             {
                 int xDir = eP.getX();
                 int yDir = eP.getY();
                 if (piece.getType() == Piece.TYPE_KING)//is the king
                 {
-                    List<int[]> enemyMoves = getPossibleMoves(board[xDir, yDir]);
-                    if (board[xDir, yDir].getType() == Piece.TYPE_PAWN) //pawn attack is different than movement
+                    List<int[]> enemyMoves = getPossibleMoves(temptBoard[xDir, yDir], temptBoard);
+                    if (temptBoard[xDir, yDir].getType() == Piece.TYPE_PAWN) //pawn attack is different than movement
                     {
                         enemyMoves.Clear();
-                        enemyMoves.AddRange(pawnTakePiece(board[xDir, yDir], true));
+                        enemyMoves.AddRange(pawnTakePiece(temptBoard[xDir, yDir], true, temptBoard));
                     }
                     if (enemyMoves.Contains(tile))//if any enemy can move to spot
                     {
@@ -660,18 +660,19 @@ public class Game : MonoBehaviour
                         break;
                     }
                 }
-                else if (checkForChecks(piece.getTeam(), board[xDir, yDir]))
+                else if (checkForChecks(piece.getTeam(), temptBoard[xDir, yDir], temptBoard))
                 {
                     canMove.Remove(tile);
                     break;
                 }
             }
+            System.Array.Copy(theBoard, temptBoard, 64); //copies board to tempBoard
         }
 
         return canMove;
     }
 
-    public bool checkForChecks(bool teamBeingChecked, Piece pieceChecking)//checks for a check //DONE
+    public bool checkForChecks(bool teamBeingChecked, Piece pieceChecking, Piece[,] theBoard)//checks for a check //DONE
     {
         Piece king;
         if (teamBeingChecked)//white team
@@ -682,7 +683,7 @@ public class Game : MonoBehaviour
         {
             king = blackTeam.king;
         }
-        List<int[]> enemyMoves = getPossibleMoves(pieceChecking);
+        List<int[]> enemyMoves = getPossibleMoves(pieceChecking, theBoard);
         foreach (int[] spot in enemyMoves) //check spot of it is the spot of king
         {
             if (spot != null)
@@ -696,7 +697,7 @@ public class Game : MonoBehaviour
         return false;
     }
 
-    public bool checkForCheckmates(bool teamBeingChecked)//checks for a checkmates //DONE, LOOKOVER
+    public bool checkForCheckmates(bool teamBeingChecked, Piece[,] theBoard)//checks for a checkmates //DONE, LOOKOVER
     {
         Agent group;
         if (teamBeingChecked)//white team
@@ -718,20 +719,20 @@ public class Game : MonoBehaviour
         {
             if (tileWithinBoard(king.getX() + aroundSpots[i, 0], king.getY() + aroundSpots[i, 1]))//tile inbounds
             {
-                if (!somethingOnTile(king.getX() + aroundSpots[i, 0], king.getY() + aroundSpots[i, 1], true, false))//if there is nothing on a tile
+                if (!somethingOnTile(king.getX() + aroundSpots[i, 0], king.getY() + aroundSpots[i, 1], true, false, theBoard))//if there is nothing on a tile
                 {
                     kingMoves.Add(new int[] { king.getX() + aroundSpots[i, 0], king.getY() + aroundSpots[i, 1] });
                 }
             }
         }
-        if (willMakeCheck(king, kingMoves).Count > 0)//if there is a spot that the king can move
+        if (willMakeCheck(king, kingMoves, theBoard).Count > 0)//if there is a spot that the king can move
         {
             return false;
         }
         foreach (Piece p in group.pieces)
         {
-            List<int[]> pMoves = containsSameTiles(interceptionTiles(king), getPossibleMoves(p));
-            pMoves = willMakeCheck(p, pMoves);
+            List<int[]> pMoves = containsSameTiles(interceptionTiles(king, theBoard), getPossibleMoves(p, theBoard));
+            pMoves = willMakeCheck(p, pMoves, theBoard);
             if (pMoves.Count > 0)
             {//figures out if there are any spots that piece other than the king can move to to stop a checkmate
                 return false;
@@ -740,7 +741,7 @@ public class Game : MonoBehaviour
         return true;
     }
 
-    public bool checkForStalemates(bool teamToCheck)//checks to see if there is a stalemate //DONE
+    public bool checkForStalemates(bool teamToCheck, Piece[,] theBoard)//checks to see if there is a stalemate //DONE
     {
         if (!check)//if there is a check
         {
@@ -755,7 +756,7 @@ public class Game : MonoBehaviour
             }
             foreach (Piece p in listOfPieces)
             {
-                if (getPossibleMoves(p).Count > 0)//if any piece can move
+                if (getPossibleMoves(p, theBoard).Count > 0)//if any piece can move
                 {
                     return false;
                 }
@@ -765,7 +766,7 @@ public class Game : MonoBehaviour
         return false;
     }
 
-    List<int[]> interceptionTiles(Piece piece)//figures out the tiles that can be moved to to stop piece from being taken
+    List<int[]> interceptionTiles(Piece piece, Piece[,] theBoard)//figures out the tiles that can be moved to to stop piece from being taken
     {
         List<int[]> possibleTiles = new List<int[]>(); //of possible moves piece can make
                                                        //for queen, bishops, and rooks
@@ -775,23 +776,23 @@ public class Game : MonoBehaviour
             {
                 if (i != 0 || j != 0)//to makes sure that both are not 0
                 {
-                    possibleTiles.AddRange(spotsInDirection(piece, i, j));
+                    possibleTiles.AddRange(spotsInDirection(piece, i, j, theBoard));
                     foreach (int[] tile in possibleTiles)
                     {
-                        if (board[tile[0], tile[1]] != null)
+                        if (theBoard[tile[0], tile[1]] != null)
                         {
-                            if (board[tile[0], tile[1]].getTeam() != piece.getTeam())
+                            if (theBoard[tile[0], tile[1]].getTeam() != piece.getTeam())
                             {
                                 if (i == 0 || j == 0)//rook or queen
                                 {
-                                    if (board[tile[0], tile[1]].getType() == 3 || board[tile[0], tile[1]].getType() == 4)
+                                    if (theBoard[tile[0], tile[1]].getType() == 3 || theBoard[tile[0], tile[1]].getType() == 4)
                                     {
                                         return possibleTiles;
                                     }
                                 }
                                 else//bishop or queen
                                 {
-                                    if (board[tile[0], tile[1]].getType() == 2 || board[tile[0], tile[1]].getType() == 4)
+                                    if (theBoard[tile[0], tile[1]].getType() == 2 || theBoard[tile[0], tile[1]].getType() == 4)
                                     {
                                         return possibleTiles;
                                     }
@@ -806,14 +807,14 @@ public class Game : MonoBehaviour
 
         //knights
         possibleTiles.Clear();
-        possibleTiles.AddRange(knightNormalMove(piece));
+        possibleTiles.AddRange(knightNormalMove(piece, theBoard));
         foreach (int[] tile in possibleTiles)
         {
-            if (board[tile[0], tile[1]] != null)
+            if (theBoard[tile[0], tile[1]] != null)
             {
-                if (board[tile[0], tile[1]].getTeam() != piece.getTeam())
+                if (theBoard[tile[0], tile[1]].getTeam() != piece.getTeam())
                 {
-                    if (board[tile[0], tile[1]].getType() == 1)//knight
+                    if (theBoard[tile[0], tile[1]].getType() == 1)//knight
                     {
                         List<int[]> knight = new List<int[]>();
                         knight.Add(tile);
@@ -823,7 +824,7 @@ public class Game : MonoBehaviour
             }
         }
         possibleTiles.Clear();
-        possibleTiles.AddRange(pawnTakePiece(piece, true)); //Pawn
+        possibleTiles.AddRange(pawnTakePiece(piece, true, theBoard)); //Pawn
         return possibleTiles;
     }
 
@@ -865,16 +866,23 @@ public class Game : MonoBehaviour
         return tiles;
     }
 
-    public List<Piece> getTeamPieces(bool team) //DONE
+    public List<Piece> getTeamPieces(bool team, Piece[,] theBoard) //DONE
     {
-        if (team)
+        List<Piece> theList = new List<Piece>();
+        for(int i = 0; i <= 7; i++) //x
         {
-            return whiteTeam.pieces;
+            for(int j = 0; j <= 7; j++) //y
+            {
+                if (theBoard[i, j] != null)
+                {
+                    if(theBoard[i,j].getTeam() == team)
+                    {
+                        theList.Add(theBoard[i, j]);
+                    }
+                }
+            }
         }
-        else
-        {
-            return blackTeam.pieces;
-        }
+        return theList;
     }
 
     public void deletePiece(Piece piece) //removes a piece and gameObject from game //DONE
@@ -906,7 +914,7 @@ public class Game : MonoBehaviour
      ///Piece movements///
 
     //Pawn//
-    int[] pawnStartMove(Piece pawn)//pawn moves two if haven't moved yet
+    int[] pawnStartMove(Piece pawn, Piece[,] theBoard)//pawn moves two if haven't moved yet
     {
         if (!pawn.getMoved()) //pawn has not moved
         {
@@ -914,11 +922,11 @@ public class Game : MonoBehaviour
             {
                 if (tileWithinBoard(pawn.getX(), pawn.getY() - 1) && tileWithinBoard(pawn.getX(), pawn.getY() - 2))
                 {
-                    if (somethingOnTile(pawn.getX(), pawn.getY() - 1, false, false))//if there is a piece on the tile infront of it
+                    if (somethingOnTile(pawn.getX(), pawn.getY() - 1, false, false, theBoard))//if there is a piece on the tile infront of it
                     {
                         return null;
                     }
-                    else if (somethingOnTile(pawn.getX(), pawn.getY() - 2, false, false)) //there is nothing 2 spots infront
+                    else if (somethingOnTile(pawn.getX(), pawn.getY() - 2, false, false, theBoard)) //there is nothing 2 spots infront
                     {
                         return null;
                     }
@@ -930,11 +938,11 @@ public class Game : MonoBehaviour
             {
                 if (tileWithinBoard(pawn.getX(), pawn.getY() + 1) && tileWithinBoard(pawn.getX(), pawn.getY() + 2))
                 {
-                    if (somethingOnTile(pawn.getX(), pawn.getY() + 1, false, false))//if there is a piece on the tile infront of it
+                    if (somethingOnTile(pawn.getX(), pawn.getY() + 1, false, false, theBoard))//if there is a piece on the tile infront of it
                     {
                         return null;
                     }
-                    else if (somethingOnTile(pawn.getX(), pawn.getY() + 2, false, false)) //there is nothing 2 spots infront
+                    else if (somethingOnTile(pawn.getX(), pawn.getY() + 2, false, false, theBoard)) //there is nothing 2 spots infront
                     {
                         return null;
                     }
@@ -946,15 +954,15 @@ public class Game : MonoBehaviour
         return null;
     }
 
-    int[] pawnEnPassant(Piece pawn) //pawn special move of en passant
+    int[] pawnEnPassant(Piece pawn, Piece[,] theBoard) //pawn special move of en passant
     {
         if(pawn.getTeam() && pawn.getY() == 3)//white and on row 3
         {
             if (tileWithinBoard(pawn.getX() - 1, pawn.getY())) //within the board, tile to left
             {
-                if (board[pawn.getX() - 1, pawn.getY()] != null)//there is a piece on the tile
+                if (theBoard[pawn.getX() - 1, pawn.getY()] != null)//there is a piece on the tile
                 {
-                    if(board[pawn.getX() - 1, pawn.getY()].getType() == 0 && board[pawn.getX() - 1, pawn.getY()].getTeam() != pawn.getTeam() && board[pawn.getX() - 1, pawn.getY()].getPawnDoubleMove())//piece is a pawn, not on the same team, and just moved two spaces
+                    if(theBoard[pawn.getX() - 1, pawn.getY()].getType() == 0 && theBoard[pawn.getX() - 1, pawn.getY()].getTeam() != pawn.getTeam() && theBoard[pawn.getX() - 1, pawn.getY()].getPawnDoubleMove())//piece is a pawn, not on the same team, and just moved two spaces
                     {
                         return new int[] { pawn.getX() - 1, pawn.getY() - 1 };
                     }
@@ -962,9 +970,9 @@ public class Game : MonoBehaviour
             }
             if(tileWithinBoard(pawn.getX() + 1, pawn.getY()))//within the board, tile to right
             {
-                if (board[pawn.getX() + 1, pawn.getY()] != null)//there is a piece on the tile
+                if (theBoard[pawn.getX() + 1, pawn.getY()] != null)//there is a piece on the tile
                 {
-                    if (board[pawn.getX() + 1, pawn.getY()].getType() == 0 && board[pawn.getX() + 1, pawn.getY()].getTeam() != pawn.getTeam() && board[pawn.getX() + 1, pawn.getY()].getPawnDoubleMove())//piece is a pawn, not on the same team, and just moved two spaces
+                    if (theBoard[pawn.getX() + 1, pawn.getY()].getType() == 0 && theBoard[pawn.getX() + 1, pawn.getY()].getTeam() != pawn.getTeam() && theBoard[pawn.getX() + 1, pawn.getY()].getPawnDoubleMove())//piece is a pawn, not on the same team, and just moved two spaces
                     {
                         return new int[] { pawn.getX() + 1, pawn.getY() - 1 };
                     }
@@ -975,9 +983,9 @@ public class Game : MonoBehaviour
         {
             if (tileWithinBoard(pawn.getX() - 1, pawn.getY())) //within the board, tile to left
             {
-                if (board[pawn.getX() - 1, pawn.getY()] != null)//there is a piece on the tile
+                if (theBoard[pawn.getX() - 1, pawn.getY()] != null)//there is a piece on the tile
                 {
-                    if (board[pawn.getX() - 1, pawn.getY()].getType() == 0 && board[pawn.getX() - 1, pawn.getY()].getTeam() != pawn.getTeam() && board[pawn.getX() - 1, pawn.getY()].getPawnDoubleMove())//piece is a pawn, not on the same team, and just moved two spaces
+                    if (theBoard[pawn.getX() - 1, pawn.getY()].getType() == 0 && theBoard[pawn.getX() - 1, pawn.getY()].getTeam() != pawn.getTeam() && theBoard[pawn.getX() - 1, pawn.getY()].getPawnDoubleMove())//piece is a pawn, not on the same team, and just moved two spaces
                     {
                         return new int[] { pawn.getX() - 1, pawn.getY() + 1 };
                     }
@@ -985,9 +993,9 @@ public class Game : MonoBehaviour
             }
             if (tileWithinBoard(pawn.getX() + 1, pawn.getY()))//within the board, tile to right
             {
-                if (board[pawn.getX() + 1, pawn.getY()] != null)//there is a piece on the tile
+                if (theBoard[pawn.getX() + 1, pawn.getY()] != null)//there is a piece on the tile
                 {
-                    if (board[pawn.getX() + 1, pawn.getY()].getType() == 0 && board[pawn.getX() + 1, pawn.getY()].getTeam() != pawn.getTeam() && board[pawn.getX() + 1, pawn.getY()].getPawnDoubleMove())//piece is a pawn, not on the same team, and just moved two spaces
+                    if (theBoard[pawn.getX() + 1, pawn.getY()].getType() == 0 && theBoard[pawn.getX() + 1, pawn.getY()].getTeam() != pawn.getTeam() && theBoard[pawn.getX() + 1, pawn.getY()].getPawnDoubleMove())//piece is a pawn, not on the same team, and just moved two spaces
                     {
                         return new int[] { pawn.getX() + 1, pawn.getY() + 1 };
                     }
@@ -998,13 +1006,13 @@ public class Game : MonoBehaviour
         return null;
     }
 
-    int[] pawnNormalMove(Piece pawn) //pawn moves one space forward
+    int[] pawnNormalMove(Piece pawn, Piece[,] theBoard) //pawn moves one space forward
     {
         if (pawn.getTeam())//white team
         {
             if (pawn.getY() - 1 >= 0)//still on board
             {
-                if (somethingOnTile(pawn.getX(), pawn.getY() - 1, false, false)) //if a piece in front
+                if (somethingOnTile(pawn.getX(), pawn.getY() - 1, false, false, theBoard)) //if a piece in front
                 {
                     return null;
                 }
@@ -1016,7 +1024,7 @@ public class Game : MonoBehaviour
         {
             if (pawn.getY() + 1 < 8)//still on board
             {
-                if (somethingOnTile(pawn.getX(), pawn.getY() + 1, false, false)) //if a piece in front
+                if (somethingOnTile(pawn.getX(), pawn.getY() + 1, false, false, theBoard)) //if a piece in front
                 {
                     return null;
                 }
@@ -1026,29 +1034,29 @@ public class Game : MonoBehaviour
         }
     }
 
-    public List<int[]> pawnTakePiece(Piece pawn, bool enemyTeam) //pawn move diagonly if there are enemies
+    public List<int[]> pawnTakePiece(Piece pawn, bool enemyTeam, Piece[,] theBoard) //pawn move diagonly if there are enemies
     {
         List<int[]> possibleMoves = new List<int[]>();
         if (pawn.getTeam())//white team
         {
             if(tileWithinBoard(pawn.getX() - 1, pawn.getY() - 1))//within bounds, left
             {
-                if (teamOnTile(pawn.getX() - 1, pawn.getY() - 1, !pawn.getTeam()) && enemyTeam) //enemy piece on tile
+                if (teamOnTile(pawn.getX() - 1, pawn.getY() - 1, !pawn.getTeam(), theBoard) && enemyTeam) //enemy piece on tile
                 {           
                     possibleMoves.Add(new int[] {pawn.getX() - 1, pawn.getY() - 1});
                 }
-                else if (teamOnTile(pawn.getX() - 1, pawn.getY() - 1, pawn.getTeam()) && !enemyTeam) //ally piece on tile
+                else if (teamOnTile(pawn.getX() - 1, pawn.getY() - 1, pawn.getTeam(), theBoard) && !enemyTeam) //ally piece on tile
                 {
                     possibleMoves.Add(new int[] { pawn.getX() - 1, pawn.getY() - 1 });
                 }
             }
             if (tileWithinBoard(pawn.getX() + 1, pawn.getY() - 1))//within bounds, right
             {
-                if (teamOnTile(pawn.getX() + 1, pawn.getY() - 1, !pawn.getTeam()) && enemyTeam) //enemy piece on tile
+                if (teamOnTile(pawn.getX() + 1, pawn.getY() - 1, !pawn.getTeam(), theBoard) && enemyTeam) //enemy piece on tile
                 {
                     possibleMoves.Add(new int[] { pawn.getX() + 1, pawn.getY() - 1 });                    
                 }
-                else if (teamOnTile(pawn.getX() + 1, pawn.getY() - 1, pawn.getTeam()) && !enemyTeam) //ally piece on tile
+                else if (teamOnTile(pawn.getX() + 1, pawn.getY() - 1, pawn.getTeam(), theBoard) && !enemyTeam) //ally piece on tile
                 {
                     possibleMoves.Add(new int[] { pawn.getX() + 1, pawn.getY() - 1 });
                 }
@@ -1058,22 +1066,22 @@ public class Game : MonoBehaviour
         {
             if (tileWithinBoard(pawn.getX() - 1, pawn.getY() + 1))//within bounds, left
             {
-                if (teamOnTile(pawn.getX() - 1, pawn.getY() + 1, !pawn.getTeam()) && enemyTeam) //enemy piece on tile
+                if (teamOnTile(pawn.getX() - 1, pawn.getY() + 1, !pawn.getTeam(), theBoard) && enemyTeam) //enemy piece on tile
                 {
                     possibleMoves.Add(new int[] { pawn.getX() - 1, pawn.getY() + 1 });                       
                 }
-                else if (teamOnTile(pawn.getX() - 1, pawn.getY() + 1, pawn.getTeam()) && !enemyTeam) //ally piece on tile
+                else if (teamOnTile(pawn.getX() - 1, pawn.getY() + 1, pawn.getTeam(), theBoard) && !enemyTeam) //ally piece on tile
                 {
                     possibleMoves.Add(new int[] { pawn.getX() - 1, pawn.getY() + 1 });
                 }
             }
             if (tileWithinBoard(pawn.getX() + 1, pawn.getY() + 1))//within bounds, right
             {
-                if (teamOnTile(pawn.getX() + 1, pawn.getY() + 1, !pawn.getTeam()) && enemyTeam) //enemy piece on tile
+                if (teamOnTile(pawn.getX() + 1, pawn.getY() + 1, !pawn.getTeam(), theBoard) && enemyTeam) //enemy piece on tile
                 { 
                     possibleMoves.Add(new int[] { pawn.getX() + 1, pawn.getY() + 1 });                        
                 }
-                else if (teamOnTile(pawn.getX() + 1, pawn.getY() + 1, pawn.getTeam()) && !enemyTeam) //enemy piece on tile
+                else if (teamOnTile(pawn.getX() + 1, pawn.getY() + 1, pawn.getTeam(), theBoard) && !enemyTeam) //enemy piece on tile
                 {
                     possibleMoves.Add(new int[] { pawn.getX() + 1, pawn.getY() + 1 });
                 }
@@ -1127,17 +1135,17 @@ public class Game : MonoBehaviour
         nextTurn();
     }
 
-    public int AI_PawnPromotion(Piece pawn, int xPos, int yPos)//looks at what the best move for AI is when promoting a pawn //DONE
+    public int AI_PawnPromotion(Piece pawn, int xPos, int yPos, Piece[,] theBoard)//looks at what the best move for AI is when promoting a pawn //DONE
     {
         Piece[,] temptBoard = new Piece[8, 8];
-        System.Array.Copy(board, temptBoard, 64); //copies board to test
+        System.Array.Copy(theBoard, temptBoard, 64); //copies board to test
         temptBoard[xPos, yPos] = temptBoard[pawn.getX(), pawn.getY()]; //moves piece within temptBoard
         temptBoard[pawn.getX(), pawn.getY()] = null;
 
         temptBoard[xPos, yPos].setType(Piece.TYPE_KNIGHT);//test to see what would happen if it is a knight
-        if (checkForChecks(!temptBoard[xPos, yPos].getTeam(), temptBoard[xPos, yPos])) //If it cause a check
+        if (checkForChecks(!temptBoard[xPos, yPos].getTeam(), temptBoard[xPos, yPos], theBoard)) //If it cause a check
         {
-            if (checkForCheckmates(!temptBoard[xPos, yPos].getTeam()))
+            if (checkForCheckmates(!temptBoard[xPos, yPos].getTeam(), theBoard))
             { //and cause a checkmate, then pick knight
                 return Piece.TYPE_KNIGHT;
             }
@@ -1147,7 +1155,7 @@ public class Game : MonoBehaviour
         {
 
             temptBoard[xPos, yPos].setType(t);//test to see what would happen if it was a queen, bishop, or rook
-            if (!checkForStalemates(!temptBoard[xPos, yPos].getTeam())) //if a stalemate does not occur, then become selected type
+            if (!checkForStalemates(!temptBoard[xPos, yPos].getTeam(), theBoard)) //if a stalemate does not occur, then become selected type
             {
                 return t;
             }
@@ -1156,21 +1164,21 @@ public class Game : MonoBehaviour
     }
 
     //Knight//
-    List<int[]> knightNormalMove(Piece knight) //knight normal movement, L shape
+    List<int[]> knightNormalMove(Piece knight, Piece[,] theBoard) //knight normal movement, L shape
     {
         List<int[]> possibleMoves = new List<int[]>();
         int xx = knight.getX();
         int yy = knight.getY();
         if (tileWithinBoard(xx-1,yy-2))//top left
         {
-            if (!somethingOnTile(xx - 1, yy - 2, true, !knight.getTeam()))//enemy on spot or empty
+            if (!somethingOnTile(xx - 1, yy - 2, true, !knight.getTeam(), theBoard))//enemy on spot or empty
             {
                 possibleMoves.Add(new int[] {xx-1,yy-2});
             }
         }
         if (tileWithinBoard(xx + 1, yy - 2))//top right
         {
-            if (!somethingOnTile(xx + 1, yy - 2, true, !knight.getTeam()))//enemy on spot or empty
+            if (!somethingOnTile(xx + 1, yy - 2, true, !knight.getTeam(), theBoard))//enemy on spot or empty
             {
                 possibleMoves.Add(new int[] { xx + 1, yy - 2 });
             }
@@ -1178,14 +1186,14 @@ public class Game : MonoBehaviour
 
         if (tileWithinBoard(xx + 2, yy - 1))//right up
         {
-            if (!somethingOnTile(xx + 2, yy - 1, true, !knight.getTeam()))//enemy on spot or empty
+            if (!somethingOnTile(xx + 2, yy - 1, true, !knight.getTeam(), theBoard))//enemy on spot or empty
             {
                 possibleMoves.Add(new int[] { xx + 2, yy - 1 });
             }
         }
         if (tileWithinBoard(xx + 2, yy + 1))//right bottom
         {
-            if (!somethingOnTile(xx + 2, yy + 1, true, !knight.getTeam()))//enemy on spot or empty
+            if (!somethingOnTile(xx + 2, yy + 1, true, !knight.getTeam(), theBoard))//enemy on spot or empty
             {
                 possibleMoves.Add(new int[] { xx + 2, yy + 1 });
             }
@@ -1193,14 +1201,14 @@ public class Game : MonoBehaviour
 
         if (tileWithinBoard(xx - 1, yy + 2))//down left
         {
-            if (!somethingOnTile(xx - 1, yy + 2, true, !knight.getTeam()))//enemy on spot or empty
+            if (!somethingOnTile(xx - 1, yy + 2, true, !knight.getTeam(), theBoard))//enemy on spot or empty
             {
                 possibleMoves.Add(new int[] { xx - 1, yy + 2 });
             }
         }
         if (tileWithinBoard(xx + 1, yy + 2))//down right
         {
-            if (!somethingOnTile(xx + 1, yy + 2, true, !knight.getTeam()))//enemy on spot or empty
+            if (!somethingOnTile(xx + 1, yy + 2, true, !knight.getTeam(), theBoard))//enemy on spot or empty
             {
                 possibleMoves.Add(new int[] { xx + 1, yy + 2 });
             }
@@ -1208,14 +1216,14 @@ public class Game : MonoBehaviour
 
         if (tileWithinBoard(xx - 2, yy - 1))//left up
         {
-            if (!somethingOnTile(xx - 2, yy - 1, true, !knight.getTeam()))//enemy on spot or empty
+            if (!somethingOnTile(xx - 2, yy - 1, true, !knight.getTeam(), theBoard))//enemy on spot or empty
             {
                 possibleMoves.Add(new int[] { xx - 2, yy - 1 });
             }
         }
         if (tileWithinBoard(xx - 2, yy + 1))//left bottom
         {
-            if (!somethingOnTile(xx - 2, yy + 1, true, !knight.getTeam()))//enemy on spot or empty
+            if (!somethingOnTile(xx - 2, yy + 1, true, !knight.getTeam(), theBoard))//enemy on spot or empty
             {
                 possibleMoves.Add(new int[] { xx - 2, yy + 1 });
             }
@@ -1224,29 +1232,29 @@ public class Game : MonoBehaviour
     }
 
     //Bishop//
-    List<int[]> bishopNormalMove(Piece bishop) //bishop normal movement, diagonal
+    List<int[]> bishopNormalMove(Piece bishop, Piece[,] theBoard) //bishop normal movement, diagonal
     {
         List<int[]> possibleMoves = new List<int[]>();
-        possibleMoves.AddRange(spotsInDirection(bishop, -1, -1));
-        possibleMoves.AddRange(spotsInDirection(bishop, -1,  1));
-        possibleMoves.AddRange(spotsInDirection(bishop,  1, -1));
-        possibleMoves.AddRange(spotsInDirection(bishop,  1,  1));
+        possibleMoves.AddRange(spotsInDirection(bishop, -1, -1, theBoard));
+        possibleMoves.AddRange(spotsInDirection(bishop, -1,  1, theBoard));
+        possibleMoves.AddRange(spotsInDirection(bishop,  1, -1, theBoard));
+        possibleMoves.AddRange(spotsInDirection(bishop,  1,  1, theBoard));
         return possibleMoves;
     }
 
     //Rook//
-    List<int[]> rookNormalMove(Piece rook) //rook normal movement, left, right, up, down
+    List<int[]> rookNormalMove(Piece rook, Piece[,] theBoard) //rook normal movement, left, right, up, down
     {
         List<int[]> possibleMoves = new List<int[]>();
-        possibleMoves.AddRange(spotsInDirection(rook, -1, 0));
-        possibleMoves.AddRange(spotsInDirection(rook,  1, 0));
-        possibleMoves.AddRange(spotsInDirection(rook,  0,-1));
-        possibleMoves.AddRange(spotsInDirection(rook,  0, 1));
+        possibleMoves.AddRange(spotsInDirection(rook, -1, 0, theBoard));
+        possibleMoves.AddRange(spotsInDirection(rook,  1, 0, theBoard));
+        possibleMoves.AddRange(spotsInDirection(rook,  0,-1, theBoard));
+        possibleMoves.AddRange(spotsInDirection(rook,  0, 1, theBoard));
         return possibleMoves;
     }
 
 
-    List<int[]> spotsInDirection(Piece piece, int xDir, int yDir)
+    List<int[]> spotsInDirection(Piece piece, int xDir, int yDir, Piece[,] theBoard)
     {
         List<int[]> possibleMoves = new List<int[]>();
         int xx = piece.getX();
@@ -1255,10 +1263,10 @@ public class Game : MonoBehaviour
         {
         if (tileWithinBoard(xx + (xDir * i), yy + (yDir * i)))
             {
-                if (!somethingOnTile(xx + (xDir * i), yy + (yDir * i), true, !piece.getTeam())) //tile is empty or has the opposite team on it
+                if (!somethingOnTile(xx + (xDir * i), yy + (yDir * i), true, !piece.getTeam(), theBoard)) //tile is empty or has the opposite team on it
                 {
                     possibleMoves.Add(new int[] { xx + (xDir * i), yy + (yDir * i) });
-                    if (teamOnTile(xx + (xDir * i), yy + (yDir * i), !piece.getTeam()))// if it is an enemy
+                    if (teamOnTile(xx + (xDir * i), yy + (yDir * i), !piece.getTeam(), theBoard))// if it is an enemy
                     {
                         break;
                     }
@@ -1276,34 +1284,34 @@ public class Game : MonoBehaviour
         return possibleMoves;
     }
     //Queen//
-    List<int[]> queenNormalMove(Piece queen) //queen normal movement, left, right, up, down, diagonal
+    List<int[]> queenNormalMove(Piece queen, Piece[,] theBoard) //queen normal movement, left, right, up, down, diagonal
     {
         List<int[]> possibleMoves = new List<int[]>();
-        possibleMoves.AddRange(bishopNormalMove(queen));
-        possibleMoves.AddRange(rookNormalMove(queen));
+        possibleMoves.AddRange(bishopNormalMove(queen, theBoard));
+        possibleMoves.AddRange(rookNormalMove(queen, theBoard));
         return possibleMoves;
     }
 
     //King//
-    List<int[]> kingCastling(Piece king)//a king castling
+    List<int[]> kingCastling(Piece king, Piece[,] theBoard)//a king castling
     {
         List<int[]> possibleMoves = new List<int[]>();
         if (!check && !king.getMoved())//if the king is not checked and the king hasn't moved
         {
-            if (board[0, king.getY()] != null)//left rook
+            if (theBoard[0, king.getY()] != null)//left rook
             {
-                if(board[0, king.getY()].getType() == 3 && !board[0, king.getY()].getMoved())//piece is a rook and hasn't moved
+                if(theBoard[0, king.getY()].getType() == 3 && !theBoard[0, king.getY()].getMoved())//piece is a rook and hasn't moved
                 {
-                    if(board[1, king.getY()] == null && board[2, king.getY()] == null && board[3, king.getY()] == null){ //spots are open
+                    if(theBoard[1, king.getY()] == null && theBoard[2, king.getY()] == null && theBoard[3, king.getY()] == null){ //spots are open
                         possibleMoves.Add(new int[] { 2, king.getY() });
                     }
                 }
             }
-            if (board[7, king.getY()] != null)//right rook
+            if (theBoard[7, king.getY()] != null)//right rook
             {
-                if (board[7, king.getY()].getType() == 3 && !board[7, king.getY()].getMoved())//piece is a rook and hasn't moved
+                if (theBoard[7, king.getY()].getType() == 3 && !theBoard[7, king.getY()].getMoved())//piece is a rook and hasn't moved
                 {
-                    if (board[5, king.getY()] == null && board[6, king.getY()] == null)
+                    if (theBoard[5, king.getY()] == null && theBoard[6, king.getY()] == null)
                     { //spots are open
                         possibleMoves.Add(new int[] { 6, king.getY() });
                     }
@@ -1313,7 +1321,7 @@ public class Game : MonoBehaviour
         return possibleMoves;
     }
 
-    List<int[]> kingNormalMove(Piece king) //move in any direction one tile
+    List<int[]> kingNormalMove(Piece king, Piece[,] theBoard) //move in any direction one tile
     {
         List<int[]> startMoves = new List<int[]>();
         int kX = king.getX();
@@ -1325,13 +1333,13 @@ public class Game : MonoBehaviour
             int yy = kY + spots[i, 1];//y offset
             if (tileWithinBoard(xx, yy))//within the board
             {
-                if (!somethingOnTile(xx, yy, true, !king.getTeam()))
+                if (!somethingOnTile(xx, yy, true, !king.getTeam(), theBoard))
                 {
                     startMoves.Add(new int[] {xx, yy});
                 }
             }
         }
-        List<int[]> enemyMoves = getPossibleMovesForTeam(!king.getTeam(), true);
+        List<int[]> enemyMoves = getPossibleMovesForTeam(!king.getTeam(), true, theBoard);
         for (int i = 0; i < enemyMoves.Count; i++)//get rid of tiles that are too far away to matter
         {
             int[] spot = enemyMoves[i];
@@ -1363,18 +1371,18 @@ public class Game : MonoBehaviour
         return startMoves;
     }
 
-    public List<int[]> getPossibleMovesForTeam(bool team, bool withKing) //gets all the possible moves a team  could make, with all square around their king //true = white, false = black
+    public List<int[]> getPossibleMovesForTeam(bool team, bool withKing, Piece[,] theBoard) //gets all the possible moves a team  could make, with all square around their king //true = white, false = black
     {
         List<int[]> possibleMoves = new List<int[]>();
         for(int i = 0; i < 8; i++)//x
         {
             for(int j = 0; j < 8; j++)//y
             {
-                if (board[i, j] != null)//piece on it
+                if (theBoard[i, j] != null)//piece on it
                 {
-                    if(board[i,j].getTeam() == team)//same team that is wanted
+                    if(theBoard[i,j].getTeam() == team)//same team that is wanted
                     {
-                        if(board[i,j].getType() == Piece.TYPE_KING)//king
+                        if(theBoard[i,j].getType() == Piece.TYPE_KING)//king
                         {
                             if (withKing)//want to get spots for the king to move
                             {
@@ -1385,13 +1393,13 @@ public class Game : MonoBehaviour
                                 }
                             }
                         }
-                        else if (board[i, j].getType() == Piece.TYPE_PAWN)//pawn
+                        else if (theBoard[i, j].getType() == Piece.TYPE_PAWN)//pawn
                         {
-                            possibleMoves.AddRange(pawnTakePiece(board[i, j], true));
+                            possibleMoves.AddRange(pawnTakePiece(theBoard[i, j], true, theBoard));
                         }
                         else//another piece
                         {
-                            possibleMoves.AddRange(getPossibleMoves(board[i, j]));
+                            possibleMoves.AddRange(getPossibleMoves(theBoard[i, j], theBoard));
                         }
                     }
                 }

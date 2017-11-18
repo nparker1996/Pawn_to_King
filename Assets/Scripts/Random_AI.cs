@@ -25,8 +25,8 @@ public class Random_AI : Agent
         List<int[]> listOfMoves = new List<int[]>();
         foreach (Piece p in pieces)//puts all moves into List to pick from
         {
-            List<int[]> possibleMoves = game.getPossibleMoves(p);
-            possibleMoves = game.willMakeCheck(p, possibleMoves);// checks to see if piece moves to a spot will it chose a check?
+            List<int[]> possibleMoves = game.getPossibleMoves(p, game.board);
+            possibleMoves = game.willMakeCheck(p, possibleMoves, game.board);// checks to see if piece moves to a spot will it chose a check?
             if (possibleMoves.Count > 0)
             {
                 foreach (int[] tile in possibleMoves)//foreach tile that the piece can move to, calcute value
