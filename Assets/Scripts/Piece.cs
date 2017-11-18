@@ -82,11 +82,14 @@ public class Piece : MonoBehaviour {
         return new int[] { x, y };
     }
 
-    public void setLocation(int X, int Y) //sets the location of the piece
+    public void setLocation(int X, int Y, bool withObj) //sets the location of the piece
     {
         x = X;
         y = Y;
-        this.gameObject.transform.position = new Vector3(X, 0, Y);
+        if (withObj)
+        {
+            this.gameObject.transform.position = new Vector3(X, 0, Y);
+        }
     }
 
     public bool getTeam() //returns the team the piece is on

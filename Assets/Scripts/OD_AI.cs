@@ -161,7 +161,7 @@ public class OD_AI : Agent {
 
         temptBoard[piece.getX(), piece.getY()] = null;
         temptBoard[tile[0], tile[1]] = piece;
-        //piece.testSetLocation((int)tile[0], (int)tile[1]);
+        piece.setLocation(tile[0], tile[1], false);
 
         if (piece.getType() != 0)
         {//closer to enemy king, the better
@@ -227,7 +227,7 @@ public class OD_AI : Agent {
                 }
             }
         }
-        //piece.testSetLocation(oldX, oldY);
+        piece.setLocation(oldX, oldY, false);
         return addition;
     }
 
@@ -241,7 +241,7 @@ public class OD_AI : Agent {
         System.Array.Copy(game.board, temptBoard, 64);
         temptBoard[p.getX(), p.getY()] = null;
         temptBoard[(int)tile[0], (int)tile[1]] = p; //move piece
-        //p.testSetLocation((int)tile[0], (int)tile[1]);
+        p.setLocation((int)tile[0], (int)tile[1], false);
         List<Piece> enemyTeam = game.getTeamPieces(!p.getTeam(), temptBoard);
         
 
@@ -258,7 +258,7 @@ public class OD_AI : Agent {
                     //value of move
                     eCurrent = AdditionalReasons(enemy, eTile, true) * MOD_EM_ADDITIONAL_REASON;
 
-                    if (game.board[eTile[0], eTile[1]] != null)//enemy piece on tile, aka would take piece then get value of that piece
+                    if (temptBoard[eTile[0], eTile[1]] != null)//enemy piece on tile, aka would take piece then get value of that piece
                     {
                         eCurrent += temptBoard[eTile[0], eTile[1]].getValue() * MOD_EM_TAKE_PIECE;
                         if (tile[0] == eTile[0] && tile[1] == eTile[1])//if they are hitting the piece, then less likely to move there
@@ -284,7 +284,7 @@ public class OD_AI : Agent {
             count = 1;
         }
         //Console.WriteLine((total / count) + " : " + total + " / " + count +  " : " + " (" + p.getX() + ", " + p.getY() + ", " +p.getType() + ") -->" + " (" + tile[0] + ", " + tile[1] + ") ");
-        //p.testSetLocation(oldX, oldY);
+        p.setLocation(oldX, oldY, false);
         return (total / count) + (p.getMoveCount() * MOD_EM_MOVE_COUNT);
     }
 

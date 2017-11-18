@@ -218,11 +218,11 @@ public class Game : MonoBehaviour
         {
             if (xx == 2)//left
             {
-                movePieceToTile(board[0, yy], 3, yy, board); //move left rook to proper location
+                movePieceToTile(board[0, yy], 3, yy); //move left rook to proper location
             }
             else if (xx == 6)//right
             {
-                movePieceToTile(board[7, yy], 5, yy, board); //move right rook to proper location
+                movePieceToTile(board[7, yy], 5, yy); //move right rook to proper location
             }
         }
 
@@ -256,7 +256,7 @@ public class Game : MonoBehaviour
             }
         }
 
-        movePieceToTile(selectedPiece, xx, yy, board);//moves the piece
+        movePieceToTile(selectedPiece, xx, yy);//moves the piece
 
         pawnPromotion();
 
@@ -284,11 +284,11 @@ public class Game : MonoBehaviour
             {
                 if (xx == 2)//left
                 {
-                    movePieceToTile(board[0, yy], 3, yy, board);
+                    movePieceToTile(board[0, yy], 3, yy);
                 }
                 else if (xx == 6)//right
                 {
-                    movePieceToTile(board[7, yy], 5, yy, board);
+                    movePieceToTile(board[7, yy], 5, yy);
                 }
             }
 
@@ -298,7 +298,7 @@ public class Game : MonoBehaviour
                 selectedPiece.setType(AI_PawnPromotion(selectedPiece, xx, yy, board));
             }
 
-            movePieceToTile(selectedPiece, xx, yy, board);//moves the piece
+            movePieceToTile(selectedPiece, xx, yy);//moves the piece
             nextTurn();
         }
     }
@@ -426,7 +426,7 @@ public class Game : MonoBehaviour
             }
             blackTeam.pieces.Add(board[x, y]); //adds piece to team
         }
-        board[x, y].setLocation(x, y); //set location on board of the piece
+        board[x, y].setLocation(x, y, true); //set location on board of the piece
         return board[x, y];
     }
 
@@ -591,27 +591,27 @@ public class Game : MonoBehaviour
         return false;
     }
 
-    void movePieceToTile(Piece piece, int X, int Y, Piece[,] theBoard) //moves a piece to a tile //DONE
+    void movePieceToTile(Piece piece, int X, int Y) //moves a piece to a tile //DONE
     {
         if (!piece.getMoved()) //piece has not moved
         {
             piece.setMoved();
         }
-        if (teamOnTile(X, Y, !piece.getTeam(), theBoard))//moving to a tile with an enemy on it
+        if (teamOnTile(X, Y, !piece.getTeam(), board))//moving to a tile with an enemy on it
         {
-            if (theBoard[X, Y].getTeam())//white Team
+            if (board[X, Y].getTeam())//white Team
             {
-                blackTeam.points += theBoard[X, Y].getValue();
+                blackTeam.points += board[X, Y].getValue();
             }
             else//black team
             {
-                whiteTeam.points += theBoard[X, Y].getValue();
+                whiteTeam.points += board[X, Y].getValue();
             }
-            deletePiece(theBoard[X, Y]); //piece is deleted
+            deletePiece(board[X, Y]); //piece is deleted
         }
-        theBoard[piece.getX(), piece.getY()] = null; //removes piece from previous location
-        theBoard[X, Y] = piece; //puts piece on new tile
-        piece.setLocation(X, Y);
+        board[piece.getX(), piece.getY()] = null; //removes piece from previous location
+        board[X, Y] = piece; //puts piece on new tile
+        piece.setLocation(X, Y, true);
         piece.addMoveCount(1);
     }
 
@@ -639,33 +639,41 @@ public class Game : MonoBehaviour
         foreach (int[] tile in tiles)
         {
             //sets location in temptBoard, but does not change anything in the actual board
+            int oldX = piece.getX();
+            int oldY = piece.getY();
             temptBoard[piece.getX(), piece.getY()] = null;
             temptBoard[tile[0], tile[1]] = piece;
-            List<Piece> enemyPieces = getTeamPieces(!piece.getTeam(), temptBoard);//gets all piece of enemy team
-            foreach(Piece eP in enemyPieces)
+            piece.setLocation(tile[0], tile[1], false);
+            for (int xDir = 0; xDir < 8; xDir++)
             {
-                int xDir = eP.getX();
-                int yDir = eP.getY();
-                if (piece.getType() == Piece.TYPE_KING)//is the king
+                for (int yDir = 0; yDir < 8; yDir++)
                 {
-                    List<int[]> enemyMoves = getPossibleMoves(temptBoard[xDir, yDir], temptBoard);
-                    if (temptBoard[xDir, yDir].getType() == Piece.TYPE_PAWN) //pawn attack is different than movement
+                    if (temptBoard[xDir, yDir] != null)
                     {
-                        enemyMoves.Clear();
-                        enemyMoves.AddRange(pawnTakePiece(temptBoard[xDir, yDir], true, temptBoard));
+                        if (temptBoard[xDir, yDir].getTeam() != piece.getTeam())//other team
+                            if (piece.getType() == Piece.TYPE_KING)//is the king
+                            {
+                                List<int[]> enemyMoves = getPossibleMoves(temptBoard[xDir, yDir], temptBoard);
+                                if (temptBoard[xDir, yDir].getType() == Piece.TYPE_PAWN) //pawn attack is different than movement
+                                {
+                                    enemyMoves.Clear();
+                                    enemyMoves.AddRange(pawnTakePiece(temptBoard[xDir, yDir], true, temptBoard));
+                                }
+                                if (enemyMoves.Contains(tile))//if any enemy can move to spot
+                                {
+                                    canMove.Remove(tile); //remove from list
+                                    break;
+                                }
+                            }
+                            else if (checkForChecks(piece.getTeam(), temptBoard[xDir, yDir], temptBoard))
+                            {
+                                canMove.Remove(tile);
+                                break;
+                            }
                     }
-                    if (enemyMoves.Contains(tile))//if any enemy can move to spot
-                    {
-                        canMove.Remove(tile); //remove from list
-                        break;
-                    }
-                }
-                else if (checkForChecks(piece.getTeam(), temptBoard[xDir, yDir], temptBoard))
-                {
-                    canMove.Remove(tile);
-                    break;
                 }
             }
+            piece.setLocation(oldX, oldY, false);
             System.Array.Copy(theBoard, temptBoard, 64); //copies board to tempBoard
         }
 
