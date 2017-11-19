@@ -10,6 +10,7 @@ public class Game : MonoBehaviour
     private UnityEngine.UI.Dropdown REF_UI_DROPDOWN_BLACK;
     private UnityEngine.UI.Text REF_UI_LABEL_TURN;
     private UnityEngine.UI.Text REF_UI_TEXT_PAWN_PROMOTION;
+    private UnityEngine.UI.Slider REF_UI_SLIDER_AI_TURN;
 
     [SerializeField]
     private GameObject REF_W_KING;
@@ -40,6 +41,8 @@ public class Game : MonoBehaviour
     [SerializeField]
     private GameObject REF_MOVE_OVERLAY;
 
+    private float AITurnTimer = 0; //count up timer until the ai take turn
+
     private GameObject playerWhiteTeam; //object agent script is being held in
     private GameObject playerBlackTeam; //object agent script is being held in
     public Agent whiteTeam; //white team
@@ -68,6 +71,7 @@ public class Game : MonoBehaviour
         REF_UI_LABEL_TURN = GameObject.Find("Text_Label_Turn").GetComponent<UnityEngine.UI.Text>();
         REF_UI_TEXT_PAWN_PROMOTION = GameObject.Find("Text_Pawn").GetComponent<UnityEngine.UI.Text>();
         REF_UI_TEXT_PAWN_PROMOTION.gameObject.SetActive(false);
+        REF_UI_SLIDER_AI_TURN = GameObject.Find("Slider_AI").GetComponent<UnityEngine.UI.Slider>();
 
         listOfOverlays = new List<GameObject>();
         board = new Piece[8, 8];
@@ -80,14 +84,19 @@ public class Game : MonoBehaviour
         {
             if (whiteTeam != null && blackTeam != null)
             {
-                if (whoseTurn == whiteTeam.team && whiteTeam.type != "Human") //white AI
+                if (AITurnTimer >= REF_UI_SLIDER_AI_TURN.value)
                 {
-                    whiteTeam.turn();
+                    if (whoseTurn == whiteTeam.team && whiteTeam.type != "Human") //white AI
+                    {
+                        whiteTeam.turn();
+                    }
+                    else if (whoseTurn == blackTeam.team && blackTeam.type != "Human") //black AI
+                    {
+                        blackTeam.turn();
+                    }
+                    AITurnTimer = 0; //reset timer
                 }
-                else if (whoseTurn == blackTeam.team && blackTeam.type != "Human") //black AI
-                {
-                    blackTeam.turn();
-                }
+                AITurnTimer += Time.deltaTime;
             }
         }
     }
@@ -313,7 +322,6 @@ public class Game : MonoBehaviour
 
     public void resetGame() //for neural network and variable modification AI //DONE
     {
-        //timer.Enabled = true;
         whoseTurn = true;
         check = false;
         checkmate = false;
