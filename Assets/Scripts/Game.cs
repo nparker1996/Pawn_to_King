@@ -125,7 +125,11 @@ public class Game : MonoBehaviour
 
     private void setAgent(GameObject team, string inputType) //sets the type of Agent for each AI //DONE
     {
-        switch (inputType)
+        if (team.GetComponent<Agent>() != null) //already has a AI script
+        {
+            DestroyImmediate(team.GetComponent<Agent>()); //removes the previous Agent
+        }
+        switch (inputType) //adds new Agent type
         {
             case "Optimal Decision":
                 team.AddComponent<OD_AI>();
