@@ -22,6 +22,7 @@ public class Piece : MonoBehaviour {
     private bool pawnDoubleMove; //for pawns only, if they just did their double openning move, of en passant move
     private int moveCount;
     List<int[]> moves;//list of possible Moves
+    private bool overlayOn = false; //allows to be pressed if enemy overlay is on them
 
     // Use this for initialization
     void Start()
@@ -37,7 +38,14 @@ public class Piece : MonoBehaviour {
 
     void OnMouseDown()
     {
-        worldController.GetComponent<Game>().clickedPiece(x, y);
+        if (!overlayOn) // overlay is not on same tile
+        {
+            worldController.GetComponent<Game>().clickedPiece(x, y);
+        }
+        else
+        {
+            worldController.GetComponent<Game>().clickedTile(x, y);
+        }
     }
 
     public Piece() //contructor
@@ -188,5 +196,15 @@ public class Piece : MonoBehaviour {
     public List<int[]> getMoves()
     {
         return moves;
+    }
+
+    public bool getOverlayOn()
+    {
+        return overlayOn;
+    }
+
+    public void setOverlayOn(bool overlay)
+    {
+        overlayOn = overlay;
     }
 }

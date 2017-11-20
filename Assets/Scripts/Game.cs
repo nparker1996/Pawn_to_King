@@ -104,8 +104,7 @@ public class Game : MonoBehaviour
     public void newGame()//create a new game
     {
         Debug.Log("new Game");
-        foreach (GameObject overlay in listOfOverlays) { Destroy(overlay); }//destroys each overlay current
-        listOfOverlays.Clear();//clears list
+        deleteOverlay();
         playerWhiteTeam = GameObject.Find("Player_White");
         playerBlackTeam = GameObject.Find("Player_Black");
         setAgent(playerWhiteTeam, REF_UI_DROPDOWN_WHITE.options[REF_UI_DROPDOWN_WHITE.value].text);
@@ -123,21 +122,6 @@ public class Game : MonoBehaviour
         resetBoard();
         updateText(true);
     }
-
-    //public void neededCopy(out Game newGame) //copies nessary parts of current game to new game to test 
-    //{
-    //    newGame = new Game();
-    //    newGame.whiteTeam = whiteTeam;
-    //    newGame.blackTeam = blackTeam;
-    //    newGame.board = board;
-    //    newGame.selectedPiece = selectedPiece;
-    //    newGame.whoseTurn = whoseTurn;
-    //    newGame.check = check;
-    //    newGame.checkmate = checkmate;
-    //    newGame.stalemate = stalemate;
-    //    newGame.turnCount = turnCount;
-    //    newGame.PromotePawn = PromotePawn;
-    //}
 
     private void setAgent(GameObject team, string inputType) //sets the type of Agent for each AI //DONE
     {
@@ -174,9 +158,8 @@ public class Game : MonoBehaviour
         {
             if ((whoseTurn == whiteTeam.team && whiteTeam.type == "Human") || (whoseTurn == blackTeam.team && blackTeam.type == "Human")) //so only works if playing as a human
             {
-                foreach(GameObject overlay in listOfOverlays) { Destroy(overlay); }//destroys each overlay current
-                listOfOverlays.Clear();//clears list
-                    
+                deleteOverlay();
+
                 if (board[xx, yy].getTeam() == whoseTurn)//only click piece that is their turn
                 {
                     selectedPiece = board[xx, yy];
@@ -200,6 +183,7 @@ public class Game : MonoBehaviour
                                 GameObject box = Instantiate(REF_ENEMY_OVERLAY);
                                 box.GetComponent<Overlay>().setLocation(tile[0], tile[1]);
                                 listOfOverlays.Add(box);
+                                board[tile[0], tile[1]].setOverlayOn(true);
 
                             }
                             else //open tile
@@ -219,8 +203,7 @@ public class Game : MonoBehaviour
 
     public void clickedTile(int xx, int yy) //when you click a tile that is highlighted //DONE
     {
-        foreach (GameObject overlay in listOfOverlays) { Destroy(overlay); }//destroys each overlay current
-        listOfOverlays.Clear();//clears list
+        deleteOverlay();
 
         //castling
         if (selectedPiece.getType() == Piece.TYPE_KING && !selectedPiece.getMoved())//is a king and hasn't moved
@@ -279,8 +262,7 @@ public class Game : MonoBehaviour
     {
         if (!checkmate)//a checkmate has not occurred
         {
-            foreach (GameObject overlay in listOfOverlays) { Destroy(overlay); }//destroys each overlay current
-            listOfOverlays.Clear();//clears list
+            deleteOverlay();
 
             if (piece.getTeam() == whoseTurn)//only click piece that is their turn
             {
@@ -312,12 +294,23 @@ public class Game : MonoBehaviour
         }
     }
 
+    private void deleteOverlay()
+    {
+        foreach (GameObject overlay in listOfOverlays) //destroys each overlay current
+        {
+            int[] loc = overlay.GetComponent<Overlay>().getLocation();
+            if(board[loc[0], loc[1]] != null) { board[loc[0], loc[1]].setOverlayOn(false); } //makes piece not able to be clickedTile
+            Destroy(overlay);
+        }
+
+        listOfOverlays.Clear();//clears list
+    }
+
     public void removeSelected() //removes the selectedPiece to clear the board //DONE
     {
         Debug.Log("Remove");
         selectedPiece = null;
-        foreach (GameObject overlay in listOfOverlays) { Destroy(overlay); }//destroys each overlay current
-        listOfOverlays.Clear();//clears list
+        deleteOverlay();
     }
 
     public void resetGame() //for neural network and variable modification AI //DONE
