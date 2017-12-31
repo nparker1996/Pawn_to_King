@@ -158,6 +158,7 @@ public class Game : MonoBehaviour
 
     public void clickedPiece(int xx, int yy) //the piece was clicked //DONE
     {
+        //Debug.Log(xx + " : " + yy);
         if (!checkmate && PromotePawn)//a checkmate has not occurred && if there is a pawn to promote, wait until it is promoted
         {
             if ((whoseTurn == whiteTeam.team && whiteTeam.type == "Human") || (whoseTurn == blackTeam.team && blackTeam.type == "Human")) //so only works if playing as a human
@@ -210,15 +211,15 @@ public class Game : MonoBehaviour
         deleteOverlay();
 
         //castling
-        if (selectedPiece.getType() == Piece.TYPE_KING && !selectedPiece.getMoved())//is a king and hasn't moved
+        if (selectedPiece.getType() == Piece.TYPE_KING && !selectedPiece.getMoved() && !check)//is a king and hasn't moved
         {
-            if (xx == 2)//left
+            if (xx == 5)//left
             {
-                movePieceToTile(board[0, yy], 3, yy); //move left rook to proper location
+                movePieceToTile(board[7, yy], 4, yy); //move left rook to proper location
             }
-            else if (xx == 6)//right
+            else if (xx == 1)//right
             {
-                movePieceToTile(board[7, yy], 5, yy); //move right rook to proper location
+                movePieceToTile(board[0, yy], 2, yy); //move right rook to proper location
             }
         }
 
@@ -355,9 +356,9 @@ public class Game : MonoBehaviour
         addPieceToBoard(0, 7, true, Piece.TYPE_ROOK);//(0,7) white rook
         addPieceToBoard(1, 7, true, Piece.TYPE_KNIGHT);//(1,7) white knight
         addPieceToBoard(2, 7, true, Piece.TYPE_BISHOP);//(2,7) white bishop
-        addPieceToBoard(3, 7, true, Piece.TYPE_QUEEN);//(3,7) white queen
-        addPieceToBoard(4, 7, true, Piece.TYPE_KING);//(4,7) white king
-        whiteTeam.king = board[4, 7]; //assign king piece
+        addPieceToBoard(3, 7, true, Piece.TYPE_KING);//(3,7) white king
+        addPieceToBoard(4, 7, true, Piece.TYPE_QUEEN);//(4,7) white queen
+        whiteTeam.king = board[3, 7]; //assign king piece
         addPieceToBoard(5, 7, true, Piece.TYPE_BISHOP);//(5,7) white bishop
         addPieceToBoard(6, 7, true, Piece.TYPE_KNIGHT);//(6,7) white knight
         addPieceToBoard(7, 7, true, Piece.TYPE_ROOK);//(7,7) white rook
@@ -371,9 +372,9 @@ public class Game : MonoBehaviour
         addPieceToBoard(0, 0, false, Piece.TYPE_ROOK);//(0,7) black rook
         addPieceToBoard(1, 0, false, Piece.TYPE_KNIGHT);//(1,7) black knight
         addPieceToBoard(2, 0, false, Piece.TYPE_BISHOP);//(2,7) black bishop
-        addPieceToBoard(3, 0, false, Piece.TYPE_QUEEN);//(3,7) black queen
-        addPieceToBoard(4, 0, false, Piece.TYPE_KING);//(4,7) black king
-        blackTeam.king = board[4, 0]; //assign king piece
+        addPieceToBoard(3, 0, false, Piece.TYPE_KING);//(3,7) black king
+        addPieceToBoard(4, 0, false, Piece.TYPE_QUEEN);//(4,7) black queen
+        blackTeam.king = board[3, 0]; //assign king piece
         addPieceToBoard(5, 0, false, Piece.TYPE_BISHOP);//(5,7) black bishop
         addPieceToBoard(6, 0, false, Piece.TYPE_KNIGHT);//(6,7) black knight
         addPieceToBoard(7, 0, false, Piece.TYPE_ROOK);//(7,7) black rook
@@ -491,39 +492,41 @@ public class Game : MonoBehaviour
 
     public void updateText(bool whoIsCheckmated)//updates the text on the screen //DONE
     {
+        string labelText = "";
         if (stalemate)
         {
-            REF_UI_LABEL_TURN.text = "Stalemate, it is a tie...";
+            labelText = "Stalemate, it is a tie...";
             Debug.Log("Stalemate, it is a tie...");
         }
         else if (checkmate)//there is a checkmate
         {
             if (whoIsCheckmated)//black team wins
             {
-                REF_UI_LABEL_TURN.text = "BLACK WINS!!";
+                labelText = "BLACK WINS!!";
                 Debug.Log("BLACK WINS!!");
             }
             else//white team wins
             {
-                REF_UI_LABEL_TURN.text = "WHITE WINS!!";
+                labelText = "WHITE WINS!!";
                 Debug.Log("WHITE WINS!!");
             }
         }
         else {
-            REF_UI_LABEL_TURN.text = "Turn: " + turnCount + "      ";
+            labelText = "Turn: " + turnCount + "      ";
             if (whoseTurn)//white team
             {
-                REF_UI_LABEL_TURN.text += "White's move";
+                labelText += "White's move";
             }
             else//blac team
             {
-                REF_UI_LABEL_TURN.text += "Black's move";
+                labelText += "Black's move";
             }
             if (check)
             {
-                REF_UI_LABEL_TURN.text += "     Check";
+                labelText += "     Check";
             }
         }
+        REF_UI_LABEL_TURN.text = labelText;
     }
 
     public List<int[]> getPossibleMoves(Piece piece, Piece[,] theBoard)  //get locations piece can move, //DONE
@@ -631,7 +634,6 @@ public class Game : MonoBehaviour
 
     public List<int[]> willMakeCheck(Piece piece, List<int[]> tiles, Piece[,] theBoard) // checks to see if the piece moves, will it make a check?//DONE
     {
-
         //tiles are the spots that piece will move to
         if (tiles.Count == 0)
         {
@@ -656,6 +658,7 @@ public class Game : MonoBehaviour
                     if (temptBoard[xDir, yDir] != null)
                     {
                         if (temptBoard[xDir, yDir].getTeam() != piece.getTeam())//other team
+                        {
                             if (piece.getType() == Piece.TYPE_KING)//is the king
                             {
                                 List<int[]> enemyMoves = getPossibleMoves(temptBoard[xDir, yDir], temptBoard);
@@ -664,17 +667,26 @@ public class Game : MonoBehaviour
                                     enemyMoves.Clear();
                                     enemyMoves.AddRange(pawnTakePiece(temptBoard[xDir, yDir], true, temptBoard));
                                 }
-                                if (enemyMoves.Contains(tile))//if any enemy can move to spot
+                                foreach (int[] spot in enemyMoves)//if any enemy can move to spot
                                 {
-                                    canMove.Remove(tile); //remove from list
-                                    break;
+                                    if (spot != null)
+                                    {
+                                        if (spot[0] == tile[0] && spot[1] == tile[1])//does contain spot
+                                        {
+                                            canMove.Remove(tile);
+                                            xDir = yDir = 8;
+                                            break;
+                                        }
+                                    }
                                 }
                             }
                             else if (checkForChecks(piece.getTeam(), temptBoard[xDir, yDir], temptBoard))
                             {
                                 canMove.Remove(tile);
+                                xDir = yDir = 8;
                                 break;
-                            }
+                            }   
+                        }
                     }
                 }
             }
@@ -725,8 +737,8 @@ public class Game : MonoBehaviour
         Piece king = group.king;
 
         int[,] aroundSpots = new int[,] { {-1,-1 }, { 0, -1 }, { 1, -1 },
-                                              {-1, 0 },            { 1,  0 } ,
-                                              {-1, 1 }, { 0,  1 }, { 1 , 1 }};
+                                          {-1, 0 },            { 1,  0 },
+                                          {-1, 1 }, { 0,  1 }, { 1 , 1 }};
         List<int[]> kingMoves = new List<int[]>();
         //int spotChecks = 0;
         for (int i = 0; i < 8; i++)//check the spots around the king
@@ -747,8 +759,8 @@ public class Game : MonoBehaviour
         {
             List<int[]> pMoves = containsSameTiles(interceptionTiles(king, theBoard), getPossibleMoves(p, theBoard));
             pMoves = willMakeCheck(p, pMoves, theBoard);
-            if (pMoves.Count > 0)
-            {//figures out if there are any spots that piece other than the king can move to to stop a checkmate
+            if (pMoves.Count > 0) //figures out if there are any spots that piece other than the king can move to to stop a checkmate
+            {
                 return false;
             }
         }
@@ -871,9 +883,12 @@ public class Game : MonoBehaviour
 
         foreach(int[] smallTile in smallerList)
         {
-            if (largerList.Contains(smallTile))//if tile is within larger group
+            foreach (int[] largeTile in largerList)
             {
-                tiles.Add(smallTile);
+                if (smallTile[0] == largeTile[0] && smallTile[1] == largeTile[1])//the same tile
+                {
+                    tiles.Add(smallTile);
+                }
             }
         }
 
@@ -1312,23 +1327,18 @@ public class Game : MonoBehaviour
         List<int[]> possibleMoves = new List<int[]>();
         if (!check && !king.getMoved())//if the king is not checked and the king hasn't moved
         {
-            if (theBoard[0, king.getY()] != null)//left rook
+            if (theBoard[7, king.getY()] != null && theBoard[6, king.getY()] == null && theBoard[5, king.getY()] == null && theBoard[4, king.getY()] == null)//left rook, two spots open
             {
-                if(theBoard[0, king.getY()].getType() == 3 && !theBoard[0, king.getY()].getMoved())//piece is a rook and hasn't moved
+                if(theBoard[7, king.getY()].getType() == Piece.TYPE_ROOK && !theBoard[7, king.getY()].getMoved())//piece is a rook and hasn't moved
                 {
-                    if(theBoard[1, king.getY()] == null && theBoard[2, king.getY()] == null && theBoard[3, king.getY()] == null){ //spots are open
-                        possibleMoves.Add(new int[] { 2, king.getY() });
-                    }
+                    possibleMoves.Add(new int[] { 5, king.getY() });
                 }
             }
-            if (theBoard[7, king.getY()] != null)//right rook
+            if (theBoard[0, king.getY()] != null && theBoard[1, king.getY()] == null && theBoard[1, king.getY()] == null)//right rook
             {
-                if (theBoard[7, king.getY()].getType() == 3 && !theBoard[7, king.getY()].getMoved())//piece is a rook and hasn't moved
+                if (theBoard[0, king.getY()].getType() == Piece.TYPE_ROOK && !theBoard[0, king.getY()].getMoved())//piece is a rook and hasn't moved
                 {
-                    if (theBoard[5, king.getY()] == null && theBoard[6, king.getY()] == null)
-                    { //spots are open
-                        possibleMoves.Add(new int[] { 6, king.getY() });
-                    }
+                    possibleMoves.Add(new int[] { 1, king.getY() });
                 }
             }
         }
