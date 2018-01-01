@@ -213,13 +213,13 @@ public class Game : MonoBehaviour
         //castling
         if (selectedPiece.getType() == Piece.TYPE_KING && !selectedPiece.getMoved() && !check)//is a king and hasn't moved
         {
-            if (xx == 5)//left
+            if (xx == 2)//left
             {
-                movePieceToTile(board[7, yy], 4, yy); //move left rook to proper location
+                movePieceToTile(board[0, yy], 3, yy); //move left rook to proper location
             }
-            else if (xx == 1)//right
+            else if (xx == 6)//right
             {
-                movePieceToTile(board[0, yy], 2, yy); //move right rook to proper location
+                movePieceToTile(board[7, yy], 5, yy); //move right rook to proper location
             }
         }
 
@@ -350,34 +350,34 @@ public class Game : MonoBehaviour
         //Repopulates White Side
         for (int pawnNum = 0; pawnNum <= 7; pawnNum++) //create all 8 white pawns
         {
-            addPieceToBoard(pawnNum, 6, true, Piece.TYPE_PAWN);
+            addPieceToBoard(pawnNum, 1, true, Piece.TYPE_PAWN);
         }
 
-        addPieceToBoard(0, 7, true, Piece.TYPE_ROOK);//(0,7) white rook
-        addPieceToBoard(1, 7, true, Piece.TYPE_KNIGHT);//(1,7) white knight
-        addPieceToBoard(2, 7, true, Piece.TYPE_BISHOP);//(2,7) white bishop
-        addPieceToBoard(3, 7, true, Piece.TYPE_KING);//(3,7) white king
-        addPieceToBoard(4, 7, true, Piece.TYPE_QUEEN);//(4,7) white queen
-        whiteTeam.king = board[3, 7]; //assign king piece
-        addPieceToBoard(5, 7, true, Piece.TYPE_BISHOP);//(5,7) white bishop
-        addPieceToBoard(6, 7, true, Piece.TYPE_KNIGHT);//(6,7) white knight
-        addPieceToBoard(7, 7, true, Piece.TYPE_ROOK);//(7,7) white rook
+        addPieceToBoard(0, 0, true, Piece.TYPE_ROOK);//(0,7) white rook
+        addPieceToBoard(1, 0, true, Piece.TYPE_KNIGHT);//(1,7) white knight
+        addPieceToBoard(2, 0, true, Piece.TYPE_BISHOP);//(2,7) white bishop
+        addPieceToBoard(4, 0, true, Piece.TYPE_KING);//(3,7) white king
+        addPieceToBoard(3, 0, true, Piece.TYPE_QUEEN);//(4,7) white queen
+        whiteTeam.king = board[4, 0]; //assign king piece
+        addPieceToBoard(5, 0, true, Piece.TYPE_BISHOP);//(5,7) white bishop
+        addPieceToBoard(6, 0, true, Piece.TYPE_KNIGHT);//(6,7) white knight
+        addPieceToBoard(7, 0, true, Piece.TYPE_ROOK);//(7,7) white rook
 
         //Repopulates Black Side
         for (int pawnNum = 0; pawnNum <= 7; pawnNum++) //create all 8 black pawns
         {
-            addPieceToBoard(pawnNum, 1, false, Piece.TYPE_PAWN);
+            addPieceToBoard(pawnNum, 6, false, Piece.TYPE_PAWN);
         }
 
-        addPieceToBoard(0, 0, false, Piece.TYPE_ROOK);//(0,7) black rook
-        addPieceToBoard(1, 0, false, Piece.TYPE_KNIGHT);//(1,7) black knight
-        addPieceToBoard(2, 0, false, Piece.TYPE_BISHOP);//(2,7) black bishop
-        addPieceToBoard(3, 0, false, Piece.TYPE_KING);//(3,7) black king
-        addPieceToBoard(4, 0, false, Piece.TYPE_QUEEN);//(4,7) black queen
-        blackTeam.king = board[3, 0]; //assign king piece
-        addPieceToBoard(5, 0, false, Piece.TYPE_BISHOP);//(5,7) black bishop
-        addPieceToBoard(6, 0, false, Piece.TYPE_KNIGHT);//(6,7) black knight
-        addPieceToBoard(7, 0, false, Piece.TYPE_ROOK);//(7,7) black rook
+        addPieceToBoard(0, 7, false, Piece.TYPE_ROOK);//(0,7) black rook
+        addPieceToBoard(1, 7, false, Piece.TYPE_KNIGHT);//(1,7) black knight
+        addPieceToBoard(2, 7, false, Piece.TYPE_BISHOP);//(2,7) black bishop
+        addPieceToBoard(4, 7, false, Piece.TYPE_KING);//(3,7) black king
+        addPieceToBoard(3, 7, false, Piece.TYPE_QUEEN);//(4,7) black queen
+        blackTeam.king = board[4, 7]; //assign king piece
+        addPieceToBoard(5, 7, false, Piece.TYPE_BISHOP);//(5,7) black bishop
+        addPieceToBoard(6, 7, false, Piece.TYPE_KNIGHT);//(6,7) black knight
+        addPieceToBoard(7, 7, false, Piece.TYPE_ROOK);//(7,7) black rook
     }
 
     Piece addPieceToBoard(int x, int y, bool team, int pieceType)//add a piece to location on the board //DONE
@@ -947,7 +947,7 @@ public class Game : MonoBehaviour
     {
         if (!pawn.getMoved()) //pawn has not moved
         {
-            if (pawn.getTeam())//white team
+            if (!pawn.getTeam())//black team
             {
                 if (tileWithinBoard(pawn.getX(), pawn.getY() - 1) && tileWithinBoard(pawn.getX(), pawn.getY() - 2))
                 {
@@ -963,7 +963,7 @@ public class Game : MonoBehaviour
                 }
                 return null;
             }
-            else//back team
+            else//white team
             {
                 if (tileWithinBoard(pawn.getX(), pawn.getY() + 1) && tileWithinBoard(pawn.getX(), pawn.getY() + 2))
                 {
@@ -985,7 +985,7 @@ public class Game : MonoBehaviour
 
     int[] pawnEnPassant(Piece pawn, Piece[,] theBoard) //pawn special move of en passant
     {
-        if(pawn.getTeam() && pawn.getY() == 3)//white and on row 3
+        if(!pawn.getTeam() && pawn.getY() == 3)//black and on row 3
         {
             if (tileWithinBoard(pawn.getX() - 1, pawn.getY())) //within the board, tile to left
             {
@@ -1008,7 +1008,7 @@ public class Game : MonoBehaviour
                 }
             }
         }
-        else if(!pawn.getTeam() && pawn.getY() == 4)//black and on 4
+        else if(pawn.getTeam() && pawn.getY() == 4)//white and on 4
         {
             if (tileWithinBoard(pawn.getX() - 1, pawn.getY())) //within the board, tile to left
             {
@@ -1037,7 +1037,7 @@ public class Game : MonoBehaviour
 
     int[] pawnNormalMove(Piece pawn, Piece[,] theBoard) //pawn moves one space forward
     {
-        if (pawn.getTeam())//white team
+        if (!pawn.getTeam())//black team
         {
             if (pawn.getY() - 1 >= 0)//still on board
             {
@@ -1049,7 +1049,7 @@ public class Game : MonoBehaviour
             }
             return null;//out of bounds
         }
-        else//black team
+        else//white team
         {
             if (pawn.getY() + 1 < 8)//still on board
             {
@@ -1066,7 +1066,7 @@ public class Game : MonoBehaviour
     public List<int[]> pawnTakePiece(Piece pawn, bool enemyTeam, Piece[,] theBoard) //pawn move diagonly if there are enemies
     {
         List<int[]> possibleMoves = new List<int[]>();
-        if (pawn.getTeam())//white team
+        if (!pawn.getTeam())//black team
         {
             if(tileWithinBoard(pawn.getX() - 1, pawn.getY() - 1))//within bounds, left
             {
@@ -1091,7 +1091,7 @@ public class Game : MonoBehaviour
                 }
             }
         }
-        else//black team
+        else//white team
         {
             if (tileWithinBoard(pawn.getX() - 1, pawn.getY() + 1))//within bounds, left
             {
@@ -1327,18 +1327,18 @@ public class Game : MonoBehaviour
         List<int[]> possibleMoves = new List<int[]>();
         if (!check && !king.getMoved())//if the king is not checked and the king hasn't moved
         {
-            if (theBoard[7, king.getY()] != null && theBoard[6, king.getY()] == null && theBoard[5, king.getY()] == null && theBoard[4, king.getY()] == null)//left rook, two spots open
+            if (theBoard[0, king.getY()] != null && theBoard[1, king.getY()] == null && theBoard[2, king.getY()] == null && theBoard[3, king.getY()] == null)//left rook, two spots open
             {
-                if(theBoard[7, king.getY()].getType() == Piece.TYPE_ROOK && !theBoard[7, king.getY()].getMoved())//piece is a rook and hasn't moved
+                if(theBoard[0, king.getY()].getType() == Piece.TYPE_ROOK && !theBoard[0, king.getY()].getMoved())//piece is a rook and hasn't moved
                 {
-                    possibleMoves.Add(new int[] { 5, king.getY() });
+                    possibleMoves.Add(new int[] { 2, king.getY() });
                 }
             }
-            if (theBoard[0, king.getY()] != null && theBoard[1, king.getY()] == null && theBoard[1, king.getY()] == null)//right rook
+            if (theBoard[7, king.getY()] != null && theBoard[6, king.getY()] == null && theBoard[5, king.getY()] == null)//right rook
             {
-                if (theBoard[0, king.getY()].getType() == Piece.TYPE_ROOK && !theBoard[0, king.getY()].getMoved())//piece is a rook and hasn't moved
+                if (theBoard[7, king.getY()].getType() == Piece.TYPE_ROOK && !theBoard[7, king.getY()].getMoved())//piece is a rook and hasn't moved
                 {
-                    possibleMoves.Add(new int[] { 1, king.getY() });
+                    possibleMoves.Add(new int[] { 6, king.getY() });
                 }
             }
         }
