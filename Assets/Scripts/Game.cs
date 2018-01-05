@@ -123,7 +123,7 @@ public class Game : MonoBehaviour
         updateText(true);
     }
 
-    private void setAgent(GameObject team, string inputType) //sets the type of Agent for each AI //DONE
+    private void setAgent(GameObject team, string inputType) //sets the type of Agent for each AI 
     {
         if (team.GetComponent<Agent>() != null) //already has a AI script
         {
@@ -156,7 +156,7 @@ public class Game : MonoBehaviour
         }
     }
 
-    public void clickedPiece(int xx, int yy) //the piece was clicked //DONE
+    public void clickedPiece(int xx, int yy) //the piece was clicked 
     {
         //Debug.Log(xx + " : " + yy);
         if (!checkmate && PromotePawn)//a checkmate has not occurred && if there is a pawn to promote, wait until it is promoted
@@ -206,7 +206,7 @@ public class Game : MonoBehaviour
        
     }
 
-    public void clickedTile(int xx, int yy) //when you click a tile that is highlighted //DONE
+    public void clickedTile(int xx, int yy) //when you click a tile that is highlighted 
     {
         deleteOverlay();
 
@@ -263,7 +263,7 @@ public class Game : MonoBehaviour
         }
     }
 
-    public void clickedPieceAI(Piece piece, int xx, int yy) //click piece method for the AI and move it //DONE
+    public void clickedPieceAI(Piece piece, int xx, int yy) //click piece method for the AI and move it 
     {
         if (!checkmate)//a checkmate has not occurred
         {
@@ -311,25 +311,26 @@ public class Game : MonoBehaviour
         listOfOverlays.Clear();//clears list
     }
 
-    public void removeSelected() //removes the selectedPiece to clear the board //DONE
+    public void removeSelected() //removes the selectedPiece to clear the board 
     {
         Debug.Log("Remove");
         selectedPiece = null;
         deleteOverlay();
     }
 
-    public void resetGame() //for neural network and variable modification AI //DONE
+    public void resetGame() //for neural network and variable modification AI 
     {
         whoseTurn = true;
         check = false;
         checkmate = false;
         stalemate = false;
         turnCount = 0;
+        log.Clear();
         resetBoard();
         updateText(true);
     }
 
-    void resetBoard() //reset board to starting positions //DONE
+    void resetBoard() //reset board to starting positions 
     {
         //deletes everything on the board
         for (int i = 0; i < 8; i++)//x
@@ -380,7 +381,7 @@ public class Game : MonoBehaviour
         addPieceToBoard(7, 7, false, Piece.TYPE_ROOK);//(7,7) black rook
     }
 
-    Piece addPieceToBoard(int x, int y, bool team, int pieceType)//add a piece to location on the board //DONE
+    Piece addPieceToBoard(int x, int y, bool team, int pieceType)//add a piece to location on the board 
     {
         if (team)//white side
         {
@@ -436,10 +437,10 @@ public class Game : MonoBehaviour
         return board[x, y];
     }
 
-    void nextTurn()//moves to the next turn //DONE
+    void nextTurn()//moves to the next turn 
     {
         //checks for checks, checkmates, and stalemates
-        bool checkCheck = false; //checks everything for a check, it's annoy, I know
+        bool checkCheck = false; //checks everything for a check, it's annoying, I know
 
         List<Piece> pOT = getTeamPieces(whoseTurn, board);
         foreach (Piece p in pOT)
@@ -470,6 +471,10 @@ public class Game : MonoBehaviour
                 stalemate = true;
             }
         }
+
+        //log.Add(getNotation(selectedPiece, )); //added notation to log
+        
+
         selectedPiece = null; //no longer selected
         whoseTurn = !whoseTurn;//switches whos turn it is
         if (whoseTurn)//has moved to the next turn.
@@ -490,7 +495,7 @@ public class Game : MonoBehaviour
         updateText(whoseTurn);
     }
 
-    public void updateText(bool whoIsCheckmated)//updates the text on the screen //DONE
+    public void updateText(bool whoIsCheckmated)//updates the text on the screen 
     {
         string labelText = "";
         if (stalemate)
@@ -529,7 +534,59 @@ public class Game : MonoBehaviour
         REF_UI_LABEL_TURN.text = labelText;
     }
 
-    public List<int[]> getPossibleMoves(Piece piece, Piece[,] theBoard)  //get locations piece can move, //DONE
+    public string getNotation(Piece piece, int X, int Y, Piece[,] theBoard, int castle, bool takePiece, bool c, bool cMate) //return the annotation for the move made
+    {
+        string anno = "";
+
+        //castling
+        if(castle == 1) { return "O-O-O"; } //queenside castle
+        else if(castle == 2) { return "O-O"; } //kingside castle
+
+        //gets big letter for each piece
+        switch (piece.getType())
+        {
+            case Piece.TYPE_KING :
+                anno += "K";
+                break;
+            case Piece.TYPE_QUEEN:
+                anno += "Q";
+                break;
+            case Piece.TYPE_ROOK:
+                anno += "R";
+                break;
+            case Piece.TYPE_BISHOP:
+                anno += "B";
+                break;
+            case Piece.TYPE_KNIGHT:
+                anno += "N";
+                break;
+            default: //pawn of broken piece
+                break;
+        }
+
+        //extra row/column info needed
+
+        //take piece
+        if(takePiece) { anno += "x"; }
+
+        //location moved to
+        anno += char.ConvertFromUtf32(X + 97); //ascii for a is 97 //x
+        anno += (Y + 1).ToString(); //y
+
+        //queen promotion
+        if (piece.getType() == Piece.TYPE_PAWN)
+        {
+
+        }
+
+        //check or checkmate
+        if (cMate) { anno += "#"; }
+        else if(c) { anno += "+"; }
+
+        return anno;
+    }
+
+    public List<int[]> getPossibleMoves(Piece piece, Piece[,] theBoard)  //get locations piece can move, 
     {
         List<int[]> possibleMoves = new List<int[]>(); //of possible moves piece can make
         switch (piece.getType())
@@ -570,7 +627,7 @@ public class Game : MonoBehaviour
         return possibleMoves;
     }
 
-    public bool somethingOnTile(int x, int y, bool sameTeamOnly, bool team, Piece[,] theBoard) //checks to see if a piece is on a tile, if sameTeam is true then also if enemy piece is there //DONE
+    public bool somethingOnTile(int x, int y, bool sameTeamOnly, bool team, Piece[,] theBoard) //checks to see if a piece is on a tile, if sameTeam is true then also if enemy piece is there 
     {
         if (theBoard[x, y] != null)//something on the spot
         {
@@ -587,7 +644,7 @@ public class Game : MonoBehaviour
         return false;//can move there
     }
 
-    private bool teamOnTile(int x, int y, bool team, Piece[,] theBoard)//checks to see if a team is on a tile //DONE
+    private bool teamOnTile(int x, int y, bool team, Piece[,] theBoard)//checks to see if a team is on a tile 
     {
         if (theBoard[x, y] != null)
         {
@@ -599,7 +656,7 @@ public class Game : MonoBehaviour
         return false;
     }
 
-    void movePieceToTile(Piece piece, int X, int Y) //moves a piece to a tile //DONE
+    void movePieceToTile(Piece piece, int X, int Y) //moves a piece to a tile 
     {
         if (!piece.getMoved()) //piece has not moved
         {
@@ -623,7 +680,7 @@ public class Game : MonoBehaviour
         piece.addMoveCount(1);
     }
 
-    public bool tileWithinBoard(int x, int y) //tile within the board //DONE
+    public bool tileWithinBoard(int x, int y) //tile within the board 
     {
         if (x < 0 || x >= 8 || y < 0 || y >= 8)
         {
@@ -632,7 +689,7 @@ public class Game : MonoBehaviour
         return true;
     }
 
-    public List<int[]> willMakeCheck(Piece piece, List<int[]> tiles, Piece[,] theBoard) // checks to see if the piece moves, will it make a check?//DONE
+    public List<int[]> willMakeCheck(Piece piece, List<int[]> tiles, Piece[,] theBoard) // checks to see if the piece moves, will it make a check?
     {
         //tiles are the spots that piece will move to
         if (tiles.Count == 0)
@@ -697,7 +754,7 @@ public class Game : MonoBehaviour
         return canMove;
     }
 
-    public bool checkForChecks(bool teamBeingChecked, Piece pieceChecking, Piece[,] theBoard)//checks for a check //DONE
+    public bool checkForChecks(bool teamBeingChecked, Piece pieceChecking, Piece[,] theBoard)//checks for a check 
     {
         if(pieceChecking == null) { return false; }
         Piece king;
@@ -723,7 +780,7 @@ public class Game : MonoBehaviour
         return false;
     }
 
-    public bool checkForCheckmates(bool teamBeingChecked, Piece[,] theBoard)//checks for a checkmates //DONE, LOOKOVER
+    public bool checkForCheckmates(bool teamBeingChecked, Piece[,] theBoard)//checks for a checkmates , LOOKOVER
     {
         Agent group;
         if (teamBeingChecked)//white team
@@ -767,7 +824,7 @@ public class Game : MonoBehaviour
         return true;
     }
 
-    public bool checkForStalemates(bool teamToCheck, Piece[,] theBoard)//checks to see if there is a stalemate //DONE
+    public bool checkForStalemates(bool teamToCheck, Piece[,] theBoard)//checks to see if there is a stalemate 
     {
         if (!check)//if there is a check
         {
@@ -854,7 +911,7 @@ public class Game : MonoBehaviour
         return possibleTiles;
     }
 
-    List<int[]> containsSameTiles(List<int[]> smallerList, List<int[]> largerList)//returns the tiles that are the same //DONE
+    List<int[]> containsSameTiles(List<int[]> smallerList, List<int[]> largerList)//returns the tiles that are the same 
     {
         List<int[]> tiles = new List<int[]>();
         if (smallerList.Count <= 0 || largerList.Count <= 0) { return tiles; }//nothing is in one of the Lists
@@ -895,7 +952,7 @@ public class Game : MonoBehaviour
         return tiles;
     }
 
-    public List<Piece> getTeamPieces(bool team, Piece[,] theBoard) //DONE
+    public List<Piece> getTeamPieces(bool team, Piece[,] theBoard) 
     {
         List<Piece> theList = new List<Piece>();
         for(int i = 0; i <= 7; i++) //x
@@ -914,7 +971,7 @@ public class Game : MonoBehaviour
         return theList;
     }
 
-    public void deletePiece(Piece piece) //removes a piece and gameObject from game //DONE
+    public void deletePiece(Piece piece) //removes a piece and gameObject from game 
     {
         if (piece.getTeam())//white side
         {
@@ -928,7 +985,7 @@ public class Game : MonoBehaviour
         board[piece.getX(), piece.getY()] = null;
     }
 
-    public void changePieceType(Piece piece, int toType) //changes one piece to a different type //DONE
+    public void changePieceType(Piece piece, int toType) //changes one piece to a different type 
     {
         int[] oldLocation = piece.getLocation();
         bool oldTeam = piece.getTeam();
@@ -1120,7 +1177,7 @@ public class Game : MonoBehaviour
         return possibleMoves;
     }
 
-    void pawnPromotion() //Pawn Promotion //DONE
+    void pawnPromotion() //Pawn Promotion 
     {
         if (selectedPiece.getType() == Piece.TYPE_PAWN)//selected piece is a pawn
         {
@@ -1131,7 +1188,7 @@ public class Game : MonoBehaviour
             }
         }
     }
-    public void toQueen_Click() //pawn to Queen //DONE
+    public void toQueen_Click() //pawn to Queen 
     {
         //selectedPiece.setType(4);
         changePieceType(selectedPiece, 4);
@@ -1139,7 +1196,7 @@ public class Game : MonoBehaviour
         PromotePawn = true;
         nextTurn();
     }
-    public void toRook_Click() //pawn to Rook //DONE
+    public void toRook_Click() //pawn to Rook 
     {
         //selectedPiece.setType(3);
         changePieceType(selectedPiece, 3);
@@ -1147,7 +1204,7 @@ public class Game : MonoBehaviour
         PromotePawn = true;
         nextTurn();
     }
-    public void toBishop_Click() //pawn to Bishop //DONE
+    public void toBishop_Click() //pawn to Bishop 
     {
         //selectedPiece.setType(2);
         changePieceType(selectedPiece, 2);
@@ -1155,7 +1212,7 @@ public class Game : MonoBehaviour
         PromotePawn = true;
         nextTurn();
     }
-    public void toKnight_Click() //pawn to Knight //DONE
+    public void toKnight_Click() //pawn to Knight 
     {
         //selectedPiece.setType(1);
         changePieceType(selectedPiece, 1);
@@ -1164,7 +1221,7 @@ public class Game : MonoBehaviour
         nextTurn();
     }
 
-    public int AI_PawnPromotion(Piece pawn, int xPos, int yPos, Piece[,] theBoard)//looks at what the best move for AI is when promoting a pawn //DONE
+    public int AI_PawnPromotion(Piece pawn, int xPos, int yPos, Piece[,] theBoard)//looks at what the best move for AI is when promoting a pawn 
     {
         Piece[,] temptBoard = new Piece[8, 8];
         System.Array.Copy(theBoard, temptBoard, 64); //copies board to test
