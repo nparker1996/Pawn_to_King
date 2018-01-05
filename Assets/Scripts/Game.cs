@@ -54,10 +54,13 @@ public class Game : MonoBehaviour
     public bool checkmate; //king is checkmated
     public bool stalemate; //it is a stalemate
     public int turnCount; //the current turn
-    public List<string[]> log; //the record of moves
+    public List<string> log; //the record of moves
     public string[] currentLog;
-    //Button[] fromPawn = new Button[4];
-    private bool PromotePawn = true;
+
+    private bool pieceTaken = false; //was a piece taken, used for notation
+    private bool PromotePawn = true; //wait for player to choose what piece to promote to
+    private int promoteTo = Piece.TYPE_PAWN; //what piece the pawn was promoted to, used for notation
+    private int castleTo = 0; //what direction occurred in castling, for notation
 
     List<GameObject> listOfOverlays;//list of overlays that can be clicked on to move to
 
@@ -213,18 +216,20 @@ public class Game : MonoBehaviour
         //castling
         if (selectedPiece.getType() == Piece.TYPE_KING && !selectedPiece.getMoved() && !check)//is a king and hasn't moved
         {
-            if (xx == 2)//left
+            if (xx == 2)//left, queenside
             {
                 movePieceToTile(board[0, yy], 3, yy); //move left rook to proper location
+                castleTo = 1;
             }
-            else if (xx == 6)//right
+            else if (xx == 6)//right, kingside
             {
                 movePieceToTile(board[7, yy], 5, yy); //move right rook to proper location
+                castleTo = 2;
             }
         }
 
         //en passant or pawn double 
-        if (selectedPiece.getType() == 0)//is a pawn
+        if (selectedPiece.getType() == Piece.TYPE_PAWN)//is a pawn
         {
             //pawn double move
             if (System.Math.Abs(selectedPiece.getY() - yy) >= 2)
@@ -249,6 +254,7 @@ public class Game : MonoBehaviour
                     }
                     Destroy(board[xx, selectedPiece.getY()].gameObject); //destory piece being captured
                     board[xx, selectedPiece.getY()] = null;
+                    pieceTaken = true;
                 }
             }
         }
@@ -278,20 +284,24 @@ public class Game : MonoBehaviour
             //castling
             if (selectedPiece.getType() == Piece.TYPE_KING && !selectedPiece.getMoved())//is a king and hasn't moved
             {
-                if (xx == 2)//left
+                if (xx == 2)//left, queenside
                 {
                     movePieceToTile(board[0, yy], 3, yy);
+                    castleTo = 1;
                 }
-                else if (xx == 6)//right
+                else if (xx == 6)//right, kingside
                 {
                     movePieceToTile(board[7, yy], 5, yy);
+                    castleTo = 2;
                 }
             }
 
             //pawn promoting
             if (selectedPiece.getType() == Piece.TYPE_PAWN && ((yy == 0 && selectedPiece.getTeam()) || (yy == 7 && !selectedPiece.getTeam())))
             {
-                selectedPiece.setType(AI_PawnPromotion(selectedPiece, xx, yy, board));
+                int p = AI_PawnPromotion(selectedPiece, xx, yy, board);
+                selectedPiece.setType(p);
+                promoteTo = p;
             }
 
             movePieceToTile(selectedPiece, xx, yy);//moves the piece
@@ -472,9 +482,12 @@ public class Game : MonoBehaviour
             }
         }
 
-        //log.Add(getNotation(selectedPiece, )); //added notation to log
-        
+        log.Add(getNotation(selectedPiece, selectedPiece.getX(), selectedPiece.getY(), board, castleTo, promoteTo, pieceTaken, check, checkmate)); //added notation to log
+        Debug.Log(log[log.Count-1]);
 
+        pieceTaken = false;
+        promoteTo = Piece.TYPE_PAWN;
+        castleTo = 0;
         selectedPiece = null; //no longer selected
         whoseTurn = !whoseTurn;//switches whos turn it is
         if (whoseTurn)//has moved to the next turn.
@@ -534,7 +547,7 @@ public class Game : MonoBehaviour
         REF_UI_LABEL_TURN.text = labelText;
     }
 
-    public string getNotation(Piece piece, int X, int Y, Piece[,] theBoard, int castle, bool takePiece, bool c, bool cMate) //return the annotation for the move made
+    public string getNotation(Piece piece, int X, int Y, Piece[,] theBoard, int castle, int promote, bool takePiece, bool c, bool cMate) //return the annotation for the move made
     {
         string anno = "";
 
@@ -543,25 +556,28 @@ public class Game : MonoBehaviour
         else if(castle == 2) { return "O-O"; } //kingside castle
 
         //gets big letter for each piece
-        switch (piece.getType())
+        if (promote == Piece.TYPE_PAWN)//a pawn was not promoted
         {
-            case Piece.TYPE_KING :
-                anno += "K";
-                break;
-            case Piece.TYPE_QUEEN:
-                anno += "Q";
-                break;
-            case Piece.TYPE_ROOK:
-                anno += "R";
-                break;
-            case Piece.TYPE_BISHOP:
-                anno += "B";
-                break;
-            case Piece.TYPE_KNIGHT:
-                anno += "N";
-                break;
-            default: //pawn of broken piece
-                break;
+            switch (piece.getType())
+            {
+                case Piece.TYPE_KING:
+                    anno += "K";
+                    break;
+                case Piece.TYPE_QUEEN:
+                    anno += "Q";
+                    break;
+                case Piece.TYPE_ROOK:
+                    anno += "R";
+                    break;
+                case Piece.TYPE_BISHOP:
+                    anno += "B";
+                    break;
+                case Piece.TYPE_KNIGHT:
+                    anno += "N";
+                    break;
+                default: //pawn or broken piece
+                    break;
+            }
         }
 
         //extra row/column info needed
@@ -574,9 +590,22 @@ public class Game : MonoBehaviour
         anno += (Y + 1).ToString(); //y
 
         //queen promotion
-        if (piece.getType() == Piece.TYPE_PAWN)
+        switch (promote)
         {
-
+            case Piece.TYPE_QUEEN:
+                anno += "=Q";
+                break;
+            case Piece.TYPE_ROOK:
+                anno += "=R";
+                break;
+            case Piece.TYPE_BISHOP:
+                anno += "=B";
+                break;
+            case Piece.TYPE_KNIGHT:
+                anno += "=N";
+                break;
+            default: //pawn or broken piece
+                break;
         }
 
         //check or checkmate
@@ -673,6 +702,7 @@ public class Game : MonoBehaviour
                 whiteTeam.points += board[X, Y].getValue();
             }
             deletePiece(board[X, Y]); //piece is deleted
+            pieceTaken = true;
         }
         board[piece.getX(), piece.getY()] = null; //removes piece from previous location
         board[X, Y] = piece; //puts piece on new tile
@@ -994,7 +1024,7 @@ public class Game : MonoBehaviour
         Piece newPiece = addPieceToBoard(oldLocation[0], oldLocation[1], oldTeam, toType);
         newPiece.setMoved(); //sets moved to true
         newPiece.setMoveCount(oldMoveCount);
-        
+        promoteTo = toType;//set for notation
     }
 
      ///Piece movements///
@@ -1181,7 +1211,7 @@ public class Game : MonoBehaviour
     {
         if (selectedPiece.getType() == Piece.TYPE_PAWN)//selected piece is a pawn
         {
-            if ((whoseTurn && selectedPiece.getY() == 0) || (!whoseTurn && selectedPiece.getY() == 7))//team with piece on oppoint
+            if ((whoseTurn && selectedPiece.getY() == 7) || (!whoseTurn && selectedPiece.getY() == 0))//team with piece on oppoint
             {
                 PromotePawn = false;
                 REF_UI_TEXT_PAWN_PROMOTION.gameObject.SetActive(true);
@@ -1191,7 +1221,7 @@ public class Game : MonoBehaviour
     public void toQueen_Click() //pawn to Queen 
     {
         //selectedPiece.setType(4);
-        changePieceType(selectedPiece, 4);
+        changePieceType(selectedPiece, Piece.TYPE_QUEEN);
         REF_UI_TEXT_PAWN_PROMOTION.gameObject.SetActive(false);
         PromotePawn = true;
         nextTurn();
@@ -1199,7 +1229,7 @@ public class Game : MonoBehaviour
     public void toRook_Click() //pawn to Rook 
     {
         //selectedPiece.setType(3);
-        changePieceType(selectedPiece, 3);
+        changePieceType(selectedPiece, Piece.TYPE_ROOK);
         REF_UI_TEXT_PAWN_PROMOTION.gameObject.SetActive(false);
         PromotePawn = true;
         nextTurn();
@@ -1207,7 +1237,7 @@ public class Game : MonoBehaviour
     public void toBishop_Click() //pawn to Bishop 
     {
         //selectedPiece.setType(2);
-        changePieceType(selectedPiece, 2);
+        changePieceType(selectedPiece, Piece.TYPE_BISHOP);
         REF_UI_TEXT_PAWN_PROMOTION.gameObject.SetActive(false);
         PromotePawn = true;
         nextTurn();
@@ -1215,7 +1245,7 @@ public class Game : MonoBehaviour
     public void toKnight_Click() //pawn to Knight 
     {
         //selectedPiece.setType(1);
-        changePieceType(selectedPiece, 1);
+        changePieceType(selectedPiece, Piece.TYPE_KNIGHT);
         REF_UI_TEXT_PAWN_PROMOTION.gameObject.SetActive(false);
         PromotePawn = true;
         nextTurn();
