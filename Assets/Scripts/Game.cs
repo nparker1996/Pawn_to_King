@@ -1044,8 +1044,6 @@ public class Game : MonoBehaviour
     public List<Piece> getListOfSamePiece(Piece p, Piece[,] theBoard) //gets list of the same piece on the same team
     {
         List<Piece> list = new List<Piece>();
-        Debug.Log(p);
-        Debug.Log(theBoard);
         foreach (Piece ally in getTeamPieces(p.getTeam(), theBoard))
         {
             if(p.getType() == ally.getType() && !p.Equals(ally)) { list.Add(ally); }
