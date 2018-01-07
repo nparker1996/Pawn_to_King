@@ -48,6 +48,7 @@ public class Game : MonoBehaviour
     public Agent whiteTeam; //white team
     public Agent blackTeam; //black team
     public Piece[,] board; //width, height
+    public Piece[,] prevBoard; //last turn's board
     public Piece selectedPiece; //the piece that is currently selected
     public bool whoseTurn; // true = white, false = black
     public bool check; //king is checked
@@ -61,6 +62,7 @@ public class Game : MonoBehaviour
     private bool PromotePawn = true; //wait for player to choose what piece to promote to
     private int promoteTo = Piece.TYPE_PAWN; //what piece the pawn was promoted to, used for notation
     private int castleTo = 0; //what direction occurred in castling, for notation
+    private int oldCol, oldRow; //what column or row the piece is in before moving, for notation
 
     List<GameObject> listOfOverlays;//list of overlays that can be clicked on to move to
 
@@ -78,6 +80,7 @@ public class Game : MonoBehaviour
 
         listOfOverlays = new List<GameObject>();
         board = new Piece[8, 8];
+        prevBoard = new Piece[8, 8];
     }
 
     // Update is called once per frame
@@ -171,6 +174,7 @@ public class Game : MonoBehaviour
                 if (board[xx, yy].getTeam() == whoseTurn)//only click piece that is their turn
                 {
                     selectedPiece = board[xx, yy];
+                    oldCol = xx; oldRow = yy; //for move notation
                     List<int[]> moves = new List<int[]>();
                     if (selectedPiece.getMoves().Count == 0)//has not calculated possible spots
                     {
@@ -278,6 +282,7 @@ public class Game : MonoBehaviour
             if (piece.getTeam() == whoseTurn)//only click piece that is their turn
             {
                 selectedPiece = piece;
+                oldCol = xx; oldRow = yy; //for move notation
             }
 
             ///move piece///
@@ -325,6 +330,7 @@ public class Game : MonoBehaviour
     {
         Debug.Log("Remove");
         selectedPiece = null;
+        oldCol = -1; oldRow = -1; //for move notation
         deleteOverlay();
     }
 
@@ -389,6 +395,8 @@ public class Game : MonoBehaviour
         addPieceToBoard(5, 7, false, Piece.TYPE_BISHOP);//(5,7) black bishop
         addPieceToBoard(6, 7, false, Piece.TYPE_KNIGHT);//(6,7) black knight
         addPieceToBoard(7, 7, false, Piece.TYPE_ROOK);//(7,7) black rook
+
+        System.Array.Copy(board, prevBoard, 64);
     }
 
     Piece addPieceToBoard(int x, int y, bool team, int pieceType)//add a piece to location on the board 
@@ -482,13 +490,14 @@ public class Game : MonoBehaviour
             }
         }
 
-        log.Add(getNotation(selectedPiece, selectedPiece.getX(), selectedPiece.getY(), board, castleTo, promoteTo, pieceTaken, check, checkmate)); //added notation to log
+        log.Add(getNotation(selectedPiece, oldCol, oldRow, selectedPiece.getX(), selectedPiece.getY(), board, prevBoard, castleTo, promoteTo, pieceTaken, check, checkmate)); //added notation to log
         Debug.Log(log[log.Count-1]);
 
         pieceTaken = false;
         promoteTo = Piece.TYPE_PAWN;
         castleTo = 0;
         selectedPiece = null; //no longer selected
+        oldCol = -1; oldRow = -1; //for move notation
         whoseTurn = !whoseTurn;//switches whos turn it is
         if (whoseTurn)//has moved to the next turn.
         {
@@ -504,6 +513,8 @@ public class Game : MonoBehaviour
                 piece.setPawnDoubleMove(false);
             }
         }
+
+        System.Array.Copy(board, prevBoard, 64);//updated for next turn
 
         updateText(whoseTurn);
     }
@@ -547,7 +558,7 @@ public class Game : MonoBehaviour
         REF_UI_LABEL_TURN.text = labelText;
     }
 
-    public string getNotation(Piece piece, int X, int Y, Piece[,] theBoard, int castle, int promote, bool takePiece, bool c, bool cMate) //return the annotation for the move made
+    public string getNotation(Piece piece, int oldX, int oldY, int newX, int newY, Piece[,] theBoard, Piece[,] thePrevBoard, int castle, int promote, bool takePiece, bool c, bool cMate) //return the annotation for the move made
     {
         string anno = "";
 
@@ -581,13 +592,42 @@ public class Game : MonoBehaviour
         }
 
         //extra row/column info needed
+        if((piece.getType() == Piece.TYPE_PAWN || promote != Piece.TYPE_PAWN) && takePiece)//pawns show their column if they are captured
+        {
+            anno += char.ConvertFromUtf32(oldX + 97); //ascii for a is 97 //x, column
+        }
+        else if(piece.getType() != Piece.TYPE_PAWN) //other pieces
+        {
+            bool colAdded = false;// keep track if the column was added, only needed if 3+ of the same on the same side exist
+            bool rowAdded = false;// keep track if the row was added, only needed if 3+ of the same on the same side exist
+            List<Piece> prevPieces = getListOfSamePiece(thePrevBoard[oldX, oldY], thePrevBoard);
+            foreach (Piece p in prevPieces)
+            {
+                foreach(int[] t in getPossibleMoves(p, thePrevBoard)){
+                    if(t[0] == newX && t[1] == newY) //if another piece of the same type and team can attack the same tile
+                    {
+                        if(p.getX() != oldX && !colAdded) //there is a column difference
+                        {
+                            anno += char.ConvertFromUtf32(oldX + 97); //ascii for a is 97 //x, column
+                            colAdded = true;
+                        }
+                        else if(p.getY() != oldY && !rowAdded) //there is a row difference
+                        {
+                            anno += (oldY + 1).ToString(); //y, row
+                            rowAdded = true;
+                        }
+                    }
+                }
+            }
+        }
+
 
         //take piece
         if(takePiece) { anno += "x"; }
 
         //location moved to
-        anno += char.ConvertFromUtf32(X + 97); //ascii for a is 97 //x
-        anno += (Y + 1).ToString(); //y
+        anno += char.ConvertFromUtf32(newX + 97); //ascii for a is 97 //x, column
+        anno += (newY + 1).ToString(); //y, row
 
         //queen promotion
         switch (promote)
@@ -999,6 +1039,18 @@ public class Game : MonoBehaviour
             }
         }
         return theList;
+    }
+
+    public List<Piece> getListOfSamePiece(Piece p, Piece[,] theBoard) //gets list of the same piece on the same team
+    {
+        List<Piece> list = new List<Piece>();
+        Debug.Log(p);
+        Debug.Log(theBoard);
+        foreach (Piece ally in getTeamPieces(p.getTeam(), theBoard))
+        {
+            if(p.getType() == ally.getType() && !p.Equals(ally)) { list.Add(ally); }
+        }
+        return list;
     }
 
     public void deletePiece(Piece piece) //removes a piece and gameObject from game 
