@@ -146,6 +146,9 @@ public class Game : MonoBehaviour
             case "Random":
                 team.AddComponent<Random_AI>();
                 break;
+            case "Unsupervised Neural Network":
+                team.AddComponent<NN_Unsupervised_AI>();
+                break;
             case "Neural Network":
                 team.AddComponent<Neural_Network_AI>();
                 break;
@@ -282,7 +285,7 @@ public class Game : MonoBehaviour
             if (piece.getTeam() == whoseTurn)//only click piece that is their turn
             {
                 selectedPiece = piece;
-                oldCol = xx; oldRow = yy; //for move notation
+                oldCol = piece.getX(); oldRow = piece.getY(); //for move notation
             }
 
             ///move piece///
@@ -302,11 +305,10 @@ public class Game : MonoBehaviour
             }
 
             //pawn promoting
-            if (selectedPiece.getType() == Piece.TYPE_PAWN && ((yy == 0 && selectedPiece.getTeam()) || (yy == 7 && !selectedPiece.getTeam())))
+            if (selectedPiece.getType() == Piece.TYPE_PAWN && ((yy == 7 && selectedPiece.getTeam()) || (yy == 0 && !selectedPiece.getTeam())))
             {
                 int p = AI_PawnPromotion(selectedPiece, xx, yy, board);
-                selectedPiece.setType(p);
-                promoteTo = p;
+                changePieceType(selectedPiece, p);
             }
 
             movePieceToTile(selectedPiece, xx, yy);//moves the piece

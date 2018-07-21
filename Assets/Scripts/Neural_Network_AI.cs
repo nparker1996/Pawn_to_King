@@ -5,27 +5,56 @@ using UnityEngine;
 public class Neural_Network_AI : Agent
 {
 
+    private struct Neuron
+    {
+        public List<int> inputW; //location of input weight
+        public float value; //value being held in the neuron
+        //public float bias; //bias that get added to calculation for value
+        public List<int> outputW; //location of output weight
+        public Neuron(float v)
+        {
+            inputW = new List<int>();
+            value = v;
+            outputW = new List<int>();
+        }
+    }
+
+    private struct Weight
+    {
+        public int inputN; //location of input neuron
+        public float value;
+        public int outputN; //location of output neuron
+        public Weight(int input, float val, int output)
+        {
+            inputN = input;
+            value = val;
+            outputN = output;
+        }
+    }
+
     private int numInputNeurons; //number of input neurons, the chess board
     private int layers; //number of layers in a neural network, between input and output neurons
     private int numNeuronsPerLayer; //number of neurons per hidden (middle) layer
     private int numOutputNeurons; //number of output neurons
 
-    private float[] neurons; //list of neurons input + hidden + output
-    private float[] weights; //list of weights between neurons
+    private Neuron[] neurons; //list of neurons input + hidden + output
+    private Weight[] weights; //list of weights between neurons
 
     private int miniBatchSize;
 
-    private float randomMin = -10; //random weights and bias min
-    private float randomMax = 10; //random weights and bias max
+    private float randomMin = -1; //random weights and bias min
+    private float randomMax = 1; //random weights and bias max
 
     // Use this for initialization
     void Start() {
         type = "Neural Network";
+        constructNewNeuralNetwork(64, 3, 32, 1);
     }
 
     public Neural_Network_AI(Game theGame, bool team) : base(theGame, team)
     {
         type = "Neural Network";
+        constructNewNeuralNetwork(64, 3, 32, 1);
     }
 
 	// Update is called once per frame
@@ -36,17 +65,57 @@ public class Neural_Network_AI : Agent
     public override void turn() { }
 
     //Utilitie function
-    private void constructNewNeuralNetwork() //construct neural network with random weights and bias
+    //Utilitie function
+    private void constructNewNeuralNetwork(int nIN, int l, int nNPL, int nON) //construct neural network with random weights and bias
     {
-        neurons = new float[numInputNeurons + (layers * numNeuronsPerLayer) + numOutputNeurons]; //new neurons
-        weights = new float[(numInputNeurons + numNeuronsPerLayer * (layers - 1) + numOutputNeurons) * numNeuronsPerLayer];//new weights
-        for(int i = numInputNeurons; i < neurons.Length - numOutputNeurons; i++)
+        numInputNeurons = nIN;
+        layers = l;
+        numNeuronsPerLayer = nNPL;
+        numOutputNeurons = nON;
+
+        neurons = new Neuron[numInputNeurons + (layers * numNeuronsPerLayer) + numOutputNeurons]; //new neurons
+        for (int i = 0; i < neurons.Length; i++)
         {
-            neurons[i] = Random.Range(randomMin, randomMax);
+            neurons[i] = new Neuron(0);
         }
-        for(int i = 0; i < weights.Length; i++)
+        weights = new Weight[(numInputNeurons + (numNeuronsPerLayer * (layers - 1)) + numOutputNeurons) * numNeuronsPerLayer];//new weights
+        int w = 0; //count of weights
+        for (int i = 0; i < neurons.Length - numOutputNeurons && w < weights.Length; i++) //each node
         {
-            weights[i] = Random.Range(randomMin, randomMax);
+            int outNeuron = -1;
+            int numWeights = i >= neurons.Length - numNeuronsPerLayer - numOutputNeurons ? numOutputNeurons : numNeuronsPerLayer;
+            for (int j = 0; j < numWeights; j++)
+            {
+                if (i < numInputNeurons) //within input node range
+                {
+                    outNeuron = numInputNeurons + (w % numNeuronsPerLayer);
+                }
+                else if (i >= neurons.Length - numNeuronsPerLayer - numOutputNeurons) //within output node range
+                {
+                    int wm = w - (numNeuronsPerLayer * (neurons.Length - numOutputNeurons - numNeuronsPerLayer));
+                    outNeuron = numInputNeurons + (layers * numNeuronsPerLayer) + (wm % numOutputNeurons);
+                }
+                else // within hidden node range
+                {
+                    outNeuron = numInputNeurons + (getLayer(i) * numNeuronsPerLayer) + (w % numNeuronsPerLayer);
+                }
+                weights[w] = new Weight(i, Random.Range(randomMin, randomMax), outNeuron);//creating weight
+                neurons[i].outputW.Add(w); //added weight as an output
+                neurons[outNeuron].inputW.Add(w); //add weight as an input
+                w++;
+            }
+        }
+    }
+
+    private void boardToInput(Piece[,] theBoard) //takes the board and turns it into input neurons
+    {
+        for(int i = 0; i < theBoard.Length; i++)
+        {
+            for(int j = 0; j < theBoard.Length; j++)
+            {
+                //sets proper neuron to value <-10, 10>
+                neurons[(i * theBoard.Length) + j].value = theBoard[i, j].getTeam() ? theBoard[i, j].getValue() : -theBoard[i, j].getValue(); // white : black
+            }
         }
     }
 
@@ -83,5 +152,10 @@ public class Neural_Network_AI : Agent
             return (neuronLoc * numNeuronsPerLayer) + weightLocOfNeuron;
         }
         return -1;
+    }
+
+    private int getLayer(int nPos)
+    {
+        return (int)(((nPos - numInputNeurons) / numNeuronsPerLayer) + 1);
     }
 }

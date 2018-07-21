@@ -101,7 +101,7 @@ public class OD_AI : Agent {
                 {
                     //minus average of enemy move value
                     double eCalc = calculateEnemyMovesAverage(p, tile) * MOD_ENEMY_MOVEMENT;
-                    Debug.Log((tile[2] - (eCalc + stayStill)) + " = " + tile[2] + " - (" + eCalc + " + " + stayStill + ") : " + "(" + p.getX() + ", " + p.getY() + ") at" + " (" + tile[0] + ", " + tile[1] + ") " + p.getType());
+                    //Debug.Log((tile[2] - (eCalc + stayStill)) + " = " + tile[2] + " - (" + eCalc + " + " + stayStill + ") : " + "(" + p.getX() + ", " + p.getY() + ") at" + " (" + tile[0] + ", " + tile[1] + ") " + p.getType());
                     tile[2] -= (eCalc + stayStill);
 
                     if (tile[2] > highestValue)
